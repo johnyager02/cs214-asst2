@@ -71,3 +71,14 @@ char* appendToStr(char* oldStr, char* suffix){ //Appends a suffix str to a str a
 	memset(finalStr + oldLen + suffixLen, '\0', 1*sizeof(char));
 	return finalStr;
 }
+
+char* reallocStr(char* oldStr, int newSize){ //Reallocs char* and checks for errors
+	char* newStr = (char*) realloc( oldStr, newSize*sizeof(char));
+	if(newStr == NULL){//Failed to realloc
+		printf("Error: %s\n", strerror(errno));
+		while(newStr == NULL){
+			newStr = (char*) realloc(oldStr, newSize*sizeof(char));
+		}
+	}
+	return newStr;
+}
