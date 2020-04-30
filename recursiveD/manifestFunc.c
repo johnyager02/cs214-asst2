@@ -219,92 +219,7 @@ char* getFilePathStrLine(char* line){ // assumes correctly formatted line: "<ver
     return NULL;
 }
 
-void modifyManifest(char* manifestPath, int lineNum, char* flagChange, char* change){ // lineNum: first line is 1
-    int manifestFile = open(manifestPath, O_RDWR, 00644);
-    if(manifestFile<0){
-        printf("Fatal Error: %s in regard to path %s\n", strerror(errno), manifestPath);
-        exit(EXIT_FAILURE);
-    }
-    //File exists -> go to lineNum
-    int numBytesRead = 0;
-    int linesRead = 0;
-    char buffer[2];
-    memset(buffer, '\0', 2*sizeof(char));
-    do{
-        numBytesRead = read(manifestFile, buffer, 1*sizeof(char));
-        if(numBytesRead < 0){
-            printf("Fatal Error (bytes): %s\n", strerror(errno));
-            int fileclose = close(manifestFile);
-            if(fileclose < 0){
-                printf("Fatal Error: %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
-            }
-            exit(EXIT_FAILURE);
-        }
-        else if(numBytesRead == 0 && linesRead == 0){ // empty file
-            printf("Empty file!\n");
-            return;
-        }
-        else if(numBytesRead == 1){
-            if( buffer[0] == '\n'){ // got newLine
-                linesRead++;
-            }
-        }
-    } while(numBytesRead != 0 && linesRead < lineNum);
 
-    //Do the changes at the specified lineNum:
-    int numBytesToWrite = strlen(change);
-    int numBytesWritten = 0;
-    int numSpacesLimit;
-    if(compareString(flagChange, "-v") == 0){ // update Version
-        while(numBytesToWrite > 0){
-        numBytesWritten = write(manifestFile, change, strlen(change)*sizeof(char));
-        numBytesToWrite-=numBytesWritten;
-        }
-        close(manifestFile);
-        return;
-    }
-    else if(compareString(flagChange, "-p") == 0){ // update Path
-        //Skip 1 space
-        numSpacesLimit = 1;
-    }
-    else if(compareString(flagChange, "-h") == 0){ // update Hash
-        //Skip 2 spaces
-        numSpacesLimit = 2;
-    }
-    else if(compareString(flagChange, "-c") == 0){ // update checkedByServer
-        //Skip 3 spaces
-        numSpacesLimit = 3;
-    }
-    //Skip spaces specified by numSpacesLimit
-    numBytesRead = 0;
-    int numSpaces = 0;
-    do{
-        numBytesRead = read(manifestFile, buffer, 1*sizeof(char));
-        if(numBytesRead < 0){
-            printf("Fatal Error (bytes): %s\n", strerror(errno));
-            int fileclose = close(manifestFile);
-            if(fileclose < 0){
-                printf("Fatal Error: %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
-        }
-        exit(EXIT_FAILURE);
-        }
-        else if(numBytesRead == 1){
-            if(buffer[0] == ' '){ // got newLine
-                numSpaces++;
-            }
-        }
-    } while(numBytesRead != 0 && numSpaces < numSpacesLimit);
-    
-    //Do specified change:
-    while(numBytesToWrite > 0){
-        numBytesWritten = write(manifestFile, change, strlen(change)*sizeof(char));
-        numBytesToWrite-=numBytesWritten;
-    }
-    close(manifestFile);
-    return;
-}
 
 char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){ // filepath: "./proj0/test0"... returns line for a specific file, returns null if file not found
     int manifestFile = open(manifestPath, O_RDONLY, 00644);
@@ -408,4 +323,101 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
     } while(numBytesRead != 0);
     close(manifestFile);
     return NULL;
+}
+
+void writeAfterChar(char* filepath, int lineNum, char* change, char charToSkip, int numSkipsToDo){ //Ex) Used to write after the first space; lineNum: first line is lineNum 0 
+    int file = open(filepath, O_RDWR, 00644);
+    if(file<0){
+        printf("Fatal Error: %s in regard to path %s\n", strerror(errno), file);
+        exit(EXIT_FAILURE);
+    }
+    //File exists -> go to lineNum
+    int numBytesRead = 0;
+    int linesRead = 0;
+    char buffer[2];
+    memset(buffer, '\0', 2*sizeof(char));
+    do{
+        numBytesRead = read(file, buffer, 1*sizeof(char));
+        if(numBytesRead < 0){
+            printf("Fatal Error (bytes): %s\n", strerror(errno));
+            int fileclose = close(file);
+            if(fileclose < 0){
+                printf("Fatal Error: %s\n", strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+            exit(EXIT_FAILURE);
+        }
+        else if(numBytesRead == 0 && linesRead == 0){ // empty file
+            printf("Empty file!\n");
+            return;
+        }
+        else if(numBytesRead == 1){
+            if( buffer[0] == '\n'){ // got newLine
+                linesRead++;
+            }
+        }
+    } while(numBytesRead != 0 && linesRead < lineNum);
+
+    //Now at lineNum specified -> start skipping chars specified:
+    int numBytesToWrite = strlen(change);
+    int numBytesWritten = 0;
+    numBytesRead = 0;
+    int numChars = 0;
+
+    if(numSkipsToDo == 0){
+        while(numBytesToWrite > 0){
+            numBytesWritten = write(file, change, strlen(change)*sizeof(char));
+            numBytesToWrite-=numBytesWritten;
+        }
+        close(file);
+        return;
+    }
+
+    do{
+        numBytesRead = read(file, buffer, 1*sizeof(char));
+        if(numBytesRead < 0){
+            printf("Fatal Error (bytes): %s\n", strerror(errno));
+            int fileclose = close(file);
+            if(fileclose < 0){
+                printf("Fatal Error: %s\n", strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+        exit(EXIT_FAILURE);
+        }
+        else if(numBytesRead == 1){
+            if(buffer[0] == charToSkip){ 
+                numChars++;
+            }
+        }
+    } while(numBytesRead != 0 && numChars < numSkipsToDo);
+    
+    //Do specified change:
+    while(numBytesToWrite > 0){
+        numBytesWritten = write(file, change, strlen(change)*sizeof(char));
+        numBytesToWrite-=numBytesWritten;
+    }
+    close(file);
+}
+
+void modifyManifest(char* manifestPath, int lineNum, char* flagChange, char* change){ // lineNum: first line is lineNum 0
+    //Do the changes at the specified lineNum:
+    int numSpacesLimit;
+    if(compareString(flagChange, "-v") == 0){ // update Version
+        //Skip 1 space
+        numSpacesLimit = 0;
+    }
+    else if(compareString(flagChange, "-p") == 0){ // update Path
+        //Skip 1 space
+        numSpacesLimit = 1;
+    }
+    else if(compareString(flagChange, "-h") == 0){ // update Hash
+        //Skip 2 spaces
+        numSpacesLimit = 2;
+    }
+    else if(compareString(flagChange, "-c") == 0){ // update checkedByServer
+        //Skip 3 spaces
+        numSpacesLimit = 3;
+    }
+    writeAfterChar(manifestPath, lineNum, change, ' ', numSpacesLimit);
+    return;
 }
