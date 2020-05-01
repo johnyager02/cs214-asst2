@@ -1,21 +1,8 @@
 #include<stdlib.h>
 #include<stdio.h>
-#include"../recursiveD/stringFunc.h"
-//#include"../recursiveD/stringFunc.c"
-#include"../recursiveD/manifestFunc.h"
-//#include"../recursiveD/manifestFunc.c"
+#include"stringFunc.h"
+#include"manifestFunc.h"
 #include<string.h>
-
-
-void readInput(char*, int);
-
-int main(int argc, char** argv){
-    readInput("ss8:project18:thisfile20:thfufjdkslfjiweoiwfjjdskfl",20);
-    send(1, "thisProject", "../recursiveD/proj0/test1");
-    fetch(31, "newProject", ".Manifest");
-    return 0;
-}
-
 
 void readInput(char* buff, int fd){
     char success = buff[0];

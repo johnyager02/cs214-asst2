@@ -7,6 +7,7 @@
 #include"recursiveD.h"
 #include"manifestFunc.h"
 #include"WTF.h"
+#include"sendAndReceive.h"
 
 int main(int argc, char** argv){
     
@@ -111,5 +112,10 @@ int main(int argc, char** argv){
 
     //test getFileContents(char* filepath)
     //getFileContents("proj0/test1");
+
+    //test sendAndReceive functions:
+    readInput("ss8:project18:thisfile20:thfufjdkslfjiweoiwfjjdskfl",20);
+    send(1, "thisProject", "proj0/test1");
+    fetch(31, "newProject", ".Manifest");
     return 0;
 }
