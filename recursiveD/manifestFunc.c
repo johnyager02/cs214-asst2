@@ -100,7 +100,7 @@ unsigned char* getHash(char* filepath){
 	return hash;
 }
 
-char* getLineToAdd(int versionNum, char* filepath){ //filepath should be "./proj0/file0"
+char* getLineToAdd(int versionNum, char* filepath){ //filepath should be "./proj0/file0" Or "proj0/file0" OR ""
     char* versionStr = numToStr(versionNum);
     int versionLen = strlen(versionStr);
 

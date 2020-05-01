@@ -1,6 +1,7 @@
 #ifndef WTF
 #define WTF
 
+int existsFile(char*);
 void configure(char*, char*);
 void checkout(char* );
 void update(char* );

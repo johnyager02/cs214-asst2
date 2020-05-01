@@ -71,10 +71,31 @@ int main(int argc, char** argv){
 
 
     //test filepathToName() -> works for correct input!
-    printf("[Main] filename is: \"%s\"\n", filepathToName("./proj0/dir0/test0"));
+    //printf("[Main] filename is: \"%s\"\n", filepathToName("./proj0/dir0/test0"));
 
     //test nthDirPathToName() -> works for correct input!
-    printf("[Main] \"%dth\" dirname is: \"%s\"\n", 2, nthDirPathToName("./proj0/dir0/", 2));
+    //printf("[Main] \"%dth\" dirname is: \"%s\"\n", 2, nthDirPathToName("./proj0/dir0/", 2));
     
+    //test existsFile() First format; "Makefile"
+    // if(existsFile("Makefile") == 1){
+    //     printf("[Main] File: \"%s\" exists!\n", "Makefile");
+    // }else{
+    //     printf("[Main] File: \"%s\" does NOT exist!\n", "Makefile");
+    // }
+    
+    // //test existsFile() Second format; "proj0/test0"
+    // if(existsFile("proj0/test0") == 1){
+    //     printf("[Main] File: \"%s\" exists!\n", "proj0/test0");
+    // }else{
+    //     printf("[Main] File: \"%s\" does NOT exist!\n", "proj0/test0");
+    // }
+
+    //test add()
+    add("proj0", "proj0/test0");
+    add("proj0", "proj0/test1");
+    add("proj0", "proj0/test2");
+    add("proj0", "Makefile");
+    add("proj0", "proj0/subproj0/subtest0");
+    //removeLine("./proj0/.Manifest", 1);
     return 0;
 }
