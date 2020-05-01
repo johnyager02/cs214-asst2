@@ -153,8 +153,56 @@ void removeEntry(char* projname, char* filename){ // Expects projname as format:
 }
 
 void currentversion(char* projname){
-    //Connect with server -> get fileNames and fileversions for a target project as a char*:  "<success/fail><commandType><projectNameLength>:<projectName><fileNameLength>:<fileName>|<dataLength>:<data>|"
+    int projNameLen = strlen(projname);
+    char* manifestPath = appendToStr(projname, "/.Manifest");
+    char currentVersion[] = "currentVersion";
+    int commandLen = strlen(currentVersion);
+    //Client -> Server: sendCommand:  "<s><c><projNameLen>:<projname><commandLen>:<currentVersion>"
+    
+    //Server -> Client: sendCommand: "<s><c><projNameLen>:<projname><dataLen>:<filenames:versions>" ... <filenames:versions> is the data internally separated by ':'
+    //EX) "<s><c><5>:<proj0><46>:<Makefile:0:proj0/test0:1:proj0/sub0/subtest0:3>" gets sent from server to client
+    char* receivedStr = "Makefile:0:proj0/test0:1:proj0/sub0/subtest0:3:proj0/test1:35"; // replace hardcoded with what server sends client
+    
+    //Parse receivedStr for filenames and their versions to print
+    char* fileToPrint = (char*) mallocStr(strlen(receivedStr));
+    memset(fileToPrint, '\0', strlen(receivedStr)*sizeof(char));
+    char* versionToPrint = (char*) mallocStr(strlen(receivedStr));
+    memset(versionToPrint, '\0', strlen(receivedStr)*sizeof(char));
 
+    // EX string to parse: "Makefile:0:proj0/test0:1:proj0/sub0/subtest0:3:proj0/test1:35" -> prints w/ \t after filename and \n after version for visual format
+    int i;
+    int indexOfCopy = 0;
+    int numDelims = 0;
+    int copyIntoFile = 1;
+    for(i = 0; i<strlen(receivedStr);i++){
+        if(receivedStr[i] == ':'){//reset buffer
+            if(numDelims % 2 == 0){ // even -> file
+                printf("%s\t", fileToPrint);
+                memset(fileToPrint, '\0', strlen(receivedStr)*sizeof(char));
+                copyIntoFile = 0;
+            }
+            else if(numDelims % 2 == 1){// odd -> version
+                printf("%s\n", versionToPrint);
+                memset(versionToPrint, '\0', strlen(receivedStr)*sizeof(char));
+                copyIntoFile = 1;
+            }
+            indexOfCopy = 0;
+            numDelims++;
+        }
+        else if(i+1 == strlen(receivedStr)){//last char
+            memcpy(versionToPrint + indexOfCopy, receivedStr+i, 1*sizeof(char));
+            printf("%s\n", versionToPrint);
+        }
+        else{
+            if(copyIntoFile == 1){
+                memcpy(fileToPrint + indexOfCopy, receivedStr + i, 1*sizeof(char));
+            }
+            else if(copyIntoFile == 0){
+                memcpy(versionToPrint + indexOfCopy, receivedStr + i, 1*sizeof(char));
+            }
+            indexOfCopy++;
+        }
+    }
 }
 
 void history(char* projname){
