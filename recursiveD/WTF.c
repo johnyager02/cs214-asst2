@@ -14,12 +14,22 @@
 int existsFile(char* filename){ 
     int file = open(filename, O_RDONLY, 00644);
     if(file < 0){
-        close(file);
         return 0;
     }
     else{
         close(file);
         return 1;
+    }
+}
+
+int existsDir(char* dirpath){
+    DIR* dirptr = opendir(dirpath);
+    if(dirptr){
+        closedir(dirptr);
+        return 1;
+    } 
+    else if(errno == ENOENT){
+        return 0;
     }
 }
 
@@ -103,9 +113,9 @@ void destroy(char* projname){
 }
 
 void add(char* projname, char* filename){ // Expects projname as format: "proj0" and filename format as: "test0" && "proj0/test0"
-    if(existsFile(filename) != 1){ //Checks if file exists
+    if(existsDir(projname) != 1){ //Checks if project exists
         //Failed
-        printf("[add] ERROR! This file: \"%s\" does not exist in the client's machine\n", filename);
+        printf("[add] ERROR! This proj: \"%s\" does not exist in the client's machine\n", projname);
         return;
     }
     char* manifestPath = appendToStr(projname, "/.Manifest");

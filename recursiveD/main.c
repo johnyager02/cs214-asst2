@@ -96,6 +96,7 @@ int main(int argc, char** argv){
     add("proj0", "proj0/test2");
     add("proj0", "Makefile");
     add("proj0", "proj0/subproj0/subtest0");
+    add("proj1", "proj0/subproj0/subtest0");
     //removeLine("./proj0/.Manifest", 1);
     return 0;
 }

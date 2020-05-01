@@ -17,5 +17,7 @@ void history(char* );
 void rollback(char* , int );
 char* nthDirPathToName(char*, int);
 char* filepathToName(char*);
+int existsFile(char*);
+
 
 #endif
