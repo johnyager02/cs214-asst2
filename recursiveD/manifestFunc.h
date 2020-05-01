@@ -16,5 +16,6 @@ void modifyManifest(char*, int, char*, char*);
 char* numToStr(int);
 char* getFilePathStrLine(char*);
 void writeAfterChar(char*, int, char*, char, int);
+void removeLine(char*, int);
 
 #endif

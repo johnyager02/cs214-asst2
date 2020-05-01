@@ -399,6 +399,68 @@ void writeAfterChar(char* filepath, int lineNum, char* change, char charToSkip, 
     close(file);
 }
 
+void removeLine(char* filepath, int lineNum){
+    //Prep file reading
+    int fileRead = open(filepath, O_RDONLY, 00644);
+    if(fileRead<0){
+        printf("Fatal Error: %s in regard to path %s\n", strerror(errno), fileRead);
+        exit(EXIT_FAILURE);
+    }
+    //Prep file writing (separate file descriptor)
+    int fileWrite = open(filepath, O_WRONLY, 00644);
+    if(fileWrite<0){
+        printf("Fatal Error: %s in regard to path %s\n", strerror(errno), fileWrite);
+        exit(EXIT_FAILURE);
+    }
+
+    //File exists -> do line by line write, except line to remove
+    int numBytesRead = 0;
+    int linesRead = 0;
+    char buffer[2];
+    memset(buffer, '\0', 2*sizeof(char));
+    int numBytesWritten = 0;
+    int lenNewFile = 0;
+    do{
+        numBytesRead = read(fileRead, buffer, 1*sizeof(char));
+        if(numBytesRead < 0){
+            printf("Fatal Error (bytes): %s\n", strerror(errno));
+            int fileclose = close(fileRead);
+            if(fileclose < 0){
+                printf("Fatal Error: %s\n", strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+            fileclose = close(fileWrite);
+            if(fileclose < 0){
+                printf("Fatal Error: %s\n", strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+            exit(EXIT_FAILURE);
+        }
+        else if(numBytesRead == 0 && linesRead == 0){ // empty file
+            printf("Empty file!\n");
+            return;
+        }
+        else if(numBytesRead == 1){
+            if( buffer[0] == '\n'){ // got newLine
+                if(linesRead!=lineNum){
+                     //write to file the byte in buffer
+                    numBytesWritten+= write(fileWrite, buffer, 1*sizeof(char)); 
+                    lenNewFile++;
+                }
+                linesRead++;
+            }
+            else if(linesRead!=lineNum){ //Not the line we want to remove
+                //write to file the byte in buffer
+                numBytesWritten+= write(fileWrite, buffer, 1*sizeof(char));
+                lenNewFile++;
+            }
+        }
+    } while(numBytesRead != 0);
+    truncate(filepath, lenNewFile);
+    close(fileRead);
+    close(fileWrite);
+}
+
 void modifyManifest(char* manifestPath, int lineNum, char* flagChange, char* change){ // lineNum: first line is lineNum 0
     //Do the changes at the specified lineNum:
     int numSpacesLimit;
