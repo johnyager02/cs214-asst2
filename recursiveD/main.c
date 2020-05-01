@@ -6,6 +6,8 @@
 #include"stringFunc.h"
 #include"recursiveD.h"
 #include"manifestFunc.h"
+#include"WTF.h"
+
 int main(int argc, char** argv){
     
 
@@ -65,7 +67,14 @@ int main(int argc, char** argv){
     // writeAfterChar("./proj0/.Manifest", 2, "n", ' ', 3);
 
     //test removeLine()
-    removeLine("./proj0/.Manifest", 1);
+    //removeLine("./proj0/.Manifest", 1);
 
+
+    //test filepathToName() -> works for correct input!
+    printf("[Main] filename is: \"%s\"\n", filepathToName("./proj0/dir0/test0"));
+
+    //test nthDirPathToName() -> works for correct input!
+    printf("[Main] \"%dth\" dirname is: \"%s\"\n", 2, nthDirPathToName("./proj0/dir0/", 2));
+    
     return 0;
 }
