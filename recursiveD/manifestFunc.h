@@ -1,7 +1,7 @@
 #ifndef manifestFunc
 #define manifestFunc
 
-char* getHash(char*);
+unsigned char* getHash(char*);
 unsigned char* mallocUChar(int);
 void printHash(unsigned char*, char*);
 unsigned char* mallocUChar(int);
