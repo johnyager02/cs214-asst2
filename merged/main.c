@@ -12,9 +12,11 @@
 int main(int argc, char** argv){
     
 
-
-    //recursivePrintDir("./");
-    //printHashR("./");
+    //Test recursivePrintDir();
+    //recursivePrintDir("./"); ->Works!
+    
+    //Test printHashR();
+    //printHashR("proj0/");
 
     //initializeManifest("./proj0");
     // char* line = getLineToAdd(0, "./proj0/test0");
@@ -114,8 +116,8 @@ int main(int argc, char** argv){
     //getFileContents("proj0/test1");
 
     //test sendAndReceive functions:
-    readInput("ss8:project18:thisfile20:thfufjdkslfjiweoiwfjjdskfl",20);
-    send(1, "thisProject", "proj0/test1");
-    fetch(31, "newProject", ".Manifest");
+    // readInput("ss8:project18:thisfile20:thfufjdkslfjiweoiwfjjdskfl",20);
+    // send(1, "thisProject", "proj0/test1");
+    // fetch(31, "newProject", ".Manifest");
     return 0;
 }

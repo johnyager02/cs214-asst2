@@ -96,11 +96,11 @@ unsigned char* getHash(char* filepath){
     memset(fileData, '\0', 1024*sizeof(unsigned char));
     int file = open(filepath, O_RDONLY);
     if(file < 0){//error opening file specified
-		printf("Fatal Error: %s in regard to path %s\n", strerror(errno), filepath);
+		printf("[getHash]-Fatal Error: %s in regard to path %s\n", strerror(errno), filepath);
         exit(EXIT_FAILURE);
 		return NULL;
 	}
-    printf("Successfully opened file: %s\n", filepath);
+    //printf("Successfully opened file: %s\n", filepath);
 	int numReads = 0;
 	int numBytesRead= 0;
     int totalReadInBytesPtr = 0;
@@ -112,7 +112,7 @@ unsigned char* getHash(char* filepath){
         //printf("Entering loop\n");
         numBytesRead = read(file, fileData, 1024*sizeof(*hash));
         if(numBytesRead< 0){
-            printf("Fatal Error (bytes): %s\n", strerror(errno));
+            printf("[getHash]-Fatal Error (bytes): %s\n", strerror(errno));
             int fileclose = close(file);
             free(hash);
             if(fileclose < 0){
@@ -135,7 +135,7 @@ unsigned char* getHash(char* filepath){
         }
     } while(numBytesRead > 0);
 	
-    printf("Done reading file: %s\n", filepath);
+    //printf("Done reading file: %s\n", filepath);
     //Done reading file... ->finalize sha1
     SHA1_Final(hash, &context);
 

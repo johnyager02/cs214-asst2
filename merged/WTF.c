@@ -8,6 +8,7 @@
 #include"stringFunc.h"
 #include"recursiveD.h"
 #include"manifestFunc.h"
+#include"sendAndReceive.h"
 
 //NOTE! format of names in arguments for filenams/dirnames: "file1" || "sub0/subsub92/file716"
 
