@@ -8,6 +8,49 @@
 #include"stringFunc.h"
 #include"recursiveD.h"
 
+char* getFileContents(char* filepath){
+    int file = open(filepath, O_RDONLY, 00644);
+    if(file<0){
+        printf("Fatal Error: %s in regard to path %s\n", strerror(errno), file);
+        exit(EXIT_FAILURE);
+    }
+    //Initialize buffer
+    char* finalStr = (char*) mallocStr(1025);
+    memset(finalStr, '\0', 1025*sizeof(char));
+
+    //Init variables
+    int numBytesRead = 0;
+    int totalReadInBytes  = 0;
+    int currentBufferSize = 1024;
+
+    //Start reading into buffer
+    do{
+        numBytesRead = read(file, finalStr+totalReadInBytes, 1*sizeof(char));
+        totalReadInBytes+=numBytesRead;
+        if(totalReadInBytes == currentBufferSize){// Realloc buffer
+            finalStr = (char*) reallocStr(finalStr, 2*currentBufferSize + 1);
+            currentBufferSize = 2*currentBufferSize;
+            memset(finalStr, '\0', (currentBufferSize + 1)*sizeof(char));
+        }
+        if(numBytesRead < 0){//Error reading file
+            printf("Fatal Error (bytes): %s\n", strerror(errno));
+            int fileclose = close(file);
+            if(fileclose < 0){
+                printf("Fatal Error: %s\n", strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+            exit(EXIT_FAILURE);
+        }
+    }while(numBytesRead != 0);
+    close(file);
+    //Make buffer exactly len of contents + 1 number of bytes long to be consistent
+    int oldNumBytes = strlen(finalStr);
+    finalStr = (char*) reallocStr(finalStr, (oldNumBytes + 1)*sizeof(char));
+
+    printf("[getFileContents]-Final buffer is: \"%s\"\n", finalStr);
+    return finalStr;
+}
+
 char* hashToStr(unsigned char* hash){
     char* hashStr = (char*) mallocStr(40 + 1);
     memset(hashStr, '\0', 41*sizeof(char));
@@ -218,7 +261,6 @@ char* getFilePathStrLine(char* line){ // assumes correctly formatted line: "<ver
     }
     return NULL;
 }
-
 
 
 char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){ // filepath: "./proj0/test0"... returns line for a specific file, returns null if file not found
@@ -483,3 +525,4 @@ void modifyManifest(char* manifestPath, int lineNum, char* flagChange, char* cha
     writeAfterChar(manifestPath, lineNum, change, ' ', numSpacesLimit);
     return;
 }
+

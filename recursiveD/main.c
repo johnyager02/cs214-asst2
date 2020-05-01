@@ -108,5 +108,8 @@ int main(int argc, char** argv){
 
     //test currentVersion()
     //currentversion("proj0");
+
+    //test getFileContents(char* filepath)
+    //getFileContents("proj0/test1");
     return 0;
 }
