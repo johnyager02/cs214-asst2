@@ -91,12 +91,19 @@ int main(int argc, char** argv){
     // }
 
     //test add()
-    add("proj0", "proj0/test0");
-    add("proj0", "proj0/test1");
-    add("proj0", "proj0/test2");
-    add("proj0", "Makefile");
-    add("proj0", "proj0/subproj0/subtest0");
-    add("proj1", "proj0/subproj0/subtest0");
-    //removeLine("./proj0/.Manifest", 1);
+    // add("proj0", "proj0/test0");
+    // add("proj0", "proj0/test1");
+    // add("proj0", "proj0/test2");
+    // add("proj0", "Makefile");
+    // add("proj0", "proj0/subproj0/subtest0");
+    // add("proj1", "proj0/subproj0/subtest0");
+    
+    //test removeEntry()
+    removeEntry("proj0", "proj0/test0");
+    removeEntry("proj0", "proj0/test1");
+    removeEntry("proj0", "proj0/test2");
+    removeEntry("proj0", "Makefile");
+    removeEntry("proj0", "proj0/subproj0/subtest0");
+    removeEntry("proj1", "proj0/subproj0/subtest0");
     return 0;
 }

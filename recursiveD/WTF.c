@@ -79,7 +79,6 @@ char* nthDirPathToName(char* dirpath, int n){ //given dirpath -> return nth dirn
 }
 
 
-
 void configure(char* hostname, char* port){
 
 }
@@ -122,18 +121,35 @@ void add(char* projname, char* filename){ // Expects projname as format: "proj0"
     if(getFileLineManifest(manifestPath, filename, "-ps")!=NULL){//file already in manifest
         printf("[add] ERROR! This file: \"%s\" already exists in the Manifest\n", filename);
         return;
-    } else{
-        printf("[add] ERROR! This file: \"%s\" does not exist in the Manifest\n", filename);
-    }
-
+    } 
     //File exists and is not already in manifest -> append to .Manifest
     printf("[add] Adding file: \"%s\" to the manifest of project: \"%s\"\n", filename, projname);
     char* lineToAdd = getLineToAdd(0, filename);
     addToManifest(manifestPath, lineToAdd);
 }
 
-void removeEntry(char* projname, char* filename){
-
+void removeEntry(char* projname, char* filename){ // Expects projname as format: "proj0" and filename format as: "test0" && "proj0/test0"
+    if(existsDir(projname) != 1){ //Checks if project exists
+        //Failed
+        printf("[removeEntry] ERROR! This proj: \"%s\" does not exist in the client's machine\n", projname);
+        return;
+    }
+    char* manifestPath = appendToStr(projname, "/.Manifest");
+    char* lineNumStr = getFileLineManifest(manifestPath, filename, "-pi");
+    int lineNumToDelete;
+    if(lineNumStr == NULL){
+        lineNumToDelete = -1;
+    }
+    else{
+        lineNumToDelete = atoi(lineNumStr);
+    }
+    if(lineNumToDelete == -1){//file to be deleted is NOT in manifest
+        printf("[removeEntry] ERROR! This file: \"%s\" does NOT exist in the Manifest\n", filename);
+        return;
+    } 
+    //File exists and is in the manifest -> delete entry
+    printf("[removeEntry] Deleting file: \"%s\" from the manifest of project: \"%s\"\n", filename, projname);
+    removeLine(manifestPath, lineNumToDelete);
 }
 
 void currentversion(char* projname){

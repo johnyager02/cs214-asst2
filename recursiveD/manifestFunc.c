@@ -281,7 +281,7 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                         printf("[getFileLineManifest] currentFileStr is: \"%s\"\n", currentFileStr);
                         if(compareString(filepath, currentFileStr) == 0){
                             printf("[getFileLineManifest] Found filepath! Returning lineNum: \"%d\"\n", linesRead+1);
-                            return numToStr(linesRead+1);
+                            return numToStr(linesRead);
                         }
                     }
                 }
@@ -307,7 +307,7 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                         printf("[getFileLineManifest] currentHashStr is: \"%s\"\n", currentHashStr);
                         if(compareString(targetHashStr, currentHashStr) == 0){
                             printf("[getFileLineManifest] Found hash! Returning lineNum: \"%d\"\n", linesRead+1);
-                            return numToStr(linesRead+1);
+                            return numToStr(linesRead);
                         }
                     }
                 }
