@@ -37,12 +37,12 @@ int main(int argc, char** argv){
     //argument1: line number of change... line 0 is the first line containing only project version, line 1 is first fileLine
     //argument2: flagChange: -v for changing version, -p for changing filepath, -h for changing hash, -c for changing serverCheckChar
     //argument3: actualChange: new Str to write to .Manifest file
-    char* versionnum =numToStr(12);
-    modifyManifest("proj0", 1, "-v", versionnum);
-    free(versionnum);
-    modifyManifest("proj0", 1, "-p", "Makefile");
-    modifyManifest("proj0", 1, "-h", "853305468f15be1ef380422489554b7e5694ebca");
-    modifyManifest("proj0", 1, "-c", "y");
+    // char* versionnum =numToStr(12);
+    // modifyManifest("proj0", 1, "-v", versionnum);
+    // free(versionnum);
+    // modifyManifest("proj0", 1, "-p", "Makefile");
+    // modifyManifest("proj0", 1, "-h", "853305468f15be1ef380422489554b7e5694ebca");
+    // modifyManifest("proj0", 1, "-c", "y");
 
     //testing getFileLineManifest(), w/ -hs / -hi; -hs is search by hash -> returns line as a str, -hi is search by hash -> returns lineNum
     // char* currentLine = getFileLineManifest("./proj0/.Manifest", "./proj0/test0", "-hi");

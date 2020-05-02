@@ -9,6 +9,7 @@
 #include"recursiveD.h"
 #include"manifestFunc.h"
 #include"sendAndReceive.h"
+#include <sys/stat.h>
 
 //NOTE! format of names in arguments for filenams/dirnames: "file1" || "sub0/subsub92/file716"
 
@@ -97,7 +98,35 @@ void upgrade(char* projname){
 }
 
 void commit(char* projname){
+    //START SERVERSIDE:
+    if(existsFile(projname) == 0){
+        //fail
+    }
 
+    //START CLIENTSIDE:
+    //fetch server's manifest:
+    int projectNameLenInt = strlen(projname);
+    char* projectNameLen = numToStr(projectNameLenInt);
+    
+    char* manifestPath = appendToStr(projname, "/.Manifest");
+    int fileNameLenInt = strlen(manifestPath);
+    char* fileNameLen = numToStr(fileNameLenInt);
+    
+    int totalBufferSize = 2 + strlen(projectNameLen) + 1 + strlen(projname) + strlen(fileNameLen) + 1 + strlen(manifestPath);
+    char* fetchClientToServerCommit = (char*) mallocStr(totalBufferSize + 1);
+    memset(fetchClientToServerCommit, '\0', (totalBufferSize+1)*sizeof(char));
+                                                            //<s><f><projectNameLength>:<projectName><fileNameLength>:<fileName>
+    sprintf(fetchClientToServerCommit, "%c%c%s:%s%s:%s", 's', 'f', projectNameLen, projname, fileNameLen, manifestPath);
+
+    
+
+    char* conflictPath = appendToStr(projname, "/.Conflict");
+    if(existsFile(conflictPath) == 1){
+
+    }
+
+    free(conflictPath);
+    return;
 }
 
 void push(char* projname){
@@ -105,7 +134,63 @@ void push(char* projname){
 }
 
 void create(char* projname){
+    //START SERVERSIDE:
 
+    //Server: check if project exists:
+    if(existsDir(projname) == 1){
+        //fail
+    }
+
+    //Server: create project folder with name: projname
+    int makeDir = mkdir(projname, 0777);
+    initializeManifest(projname);
+    
+    int projectNameLenInt = strlen(projname);
+    char* projectNameLen = numToStr(projectNameLenInt);
+    
+    char* manifestPath = appendToStr(projname, "/.Manifest");
+    int fileNameLenInt = strlen(manifestPath);
+    char* fileNameLen = numToStr(fileNameLenInt);
+    
+
+
+    char* manifestData = getFileContents(manifestPath);
+    int manifestDataLenInt = strlen(manifestData);
+    char* manifestDataLen = numToStr(manifestDataLenInt);
+
+    int totalBufferSize = 2 + strlen(projectNameLen) + 1 + strlen(projname) + strlen(fileNameLen) + 1 + strlen(manifestPath) + strlen(manifestDataLen) + 1 + strlen(manifestData);
+    char* sendServerToClientCreate = (char*) mallocStr(totalBufferSize + 1);
+    memset(sendServerToClientCreate, '\0', (totalBufferSize+1)*sizeof(char));
+                                                            //<s><s><projectNameLength>:<projectName><fileNameLength>:<fileName>|<dataLength>:<data>|
+    sprintf(sendServerToClientCreate, "%c%c%s:%s%s:%s%s:%s", 's', 's', projectNameLen, projname, fileNameLen, manifestPath, manifestDataLen, manifestData);
+    //ServerL send manifestData -> client: send: sendServerToClientCreate str
+
+    free(manifestPath);
+    free(manifestData);
+    free(projectNameLen);
+    free(fileNameLen);
+    free(manifestDataLen);
+    free(sendServerToClientCreate);
+
+
+    //START CLIENTSIDE:
+    //Client: Receives sendServerToClientCreate string and then parses...-> 
+    // char* filedata;
+    // char* projname;
+    // int makeDir = mkdir(projname, 0777);
+    // char* manifestPath = appendToStr(projname, "/.Manifest");
+    // int manifestFileClient = open(manifestPath, O_RDWR | O_CREAT, 00644);
+    // int numBytesToWrite = strlen(filedata);
+    // int numBytesWritten = 0;
+    // int totalNumBytesWritten = 0;
+    // while(numBytesToWrite > 0){
+    //     numBytesWritten = write(manifestFileClient, filedata + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
+    //     numBytesToWrite-=numBytesWritten;
+    //     totalNumBytesWritten+=numBytesWritten;
+    // }
+    // close(manifestFileClient);
+    // free(filedata);
+    // free(manifestPath);
 }
 
 void destroy(char* projname){
@@ -159,7 +244,8 @@ void currentversion(char* projname){
     char currentVersion[] = "currentVersion";
     int commandLen = strlen(currentVersion);
     //Client -> Server: sendCommand:  "<s><c><projNameLen>:<projname><commandLen>:<currentVersion>"
-    
+
+
     //Server -> Client: sendCommand: "<s><c><projNameLen>:<projname><dataLen>:<filenames:versions>" ... <filenames:versions> is the data internally separated by ':'
     //EX) "<s><c><5>:<proj0><46>:<Makefile:0:proj0/test0:1:proj0/sub0/subtest0:3>" gets sent from server to client
     char* receivedStr = "Makefile:0:proj0/test0:1:proj0/sub0/subtest0:3:proj0/test1:35"; // replace hardcoded with what server sends client
