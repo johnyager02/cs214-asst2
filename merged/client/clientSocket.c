@@ -3,7 +3,9 @@
 #include <stdlib.h> 
 #include <string.h> 
 #include <sys/socket.h> 
-int makeSocket();
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <netdb.h> 
 #include <stdio.h> 
@@ -16,37 +18,52 @@ int makeSocket();
 #include "../manifestFunc.h"
 #include "../WTF.h"
 #define MAX 80 
-#define PORT 8080 
 #define SA struct sockaddr 
-void func(int sockfd) 
-{ 
-    char* buff = (char*) mallocStr(1025);
-    memset(buff, '\0',1025*sizeof(char)); 
-    int n; 
-    int numBytesRead = 0;
-    int totalReadInBytes = 0;
-    int currentBufferSize = 1024;
-    for (;;) { 
-        memset(buff, '\0', currentBufferSize*sizeof(char)); 
-        printf("Enter the string : \n"); 
-        n = 0; 
-        while ((buff[n++] = getchar()) != '\n') 
-            ; 
+int parseInput(int, char**);
+=======
 
-        write(sockfd, buff, 10*sizeof(char));
-        // write(sockfd, buff, 10*sizeof(char)); 
-        // bzero(buff, currentBufferSize); 
-        // read(sockfd, buff, sizeof(buff)); 
-        // printf("From Server : %s", buff); 
-        // if ((strncmp(buff, "exit", 4)) == 0) { 
-        //     printf("Client Exit...\n"); 
-        //     break; 
-        // } 
-    } 
-} 
   
-int main() 
-{ 
+int main(int argc, char** argv) { 
+    char* command = argv[1];
+
+    char IP[40];
+    int PORT;
+    if(compareString("configure", command) == 0){
+        if(argc != 4){
+            printf("Error: config command takes IP and port as additional arguments\n");
+            return 1;
+        }
+        int configFile = open("../.Config", O_WRONLY | O_CREAT, 00644);
+        char* configString = malloc(strlen(argv[2]) + 2);
+        strcpy(configString, argv[2]);
+        configString[strlen(argv[2])] = ' ';
+        configString[strlen(argv[2]) + 1] = '\0';
+        configString = appendToStr(configString, argv[3]);
+        write(configFile, configString, strlen(configString));
+        printf("Configuration file set up. This IP address and Port will be used for future commands.\n");
+        return 0;
+    }
+    if(compareString(command, "add") == 0){
+        if(argc != 4){
+            printf("Error: add takes Project Name and File Name as arguments");
+            return 1;
+        }
+        add(argv[2], argv[3]);
+    }
+    if(compareString(command, "remove") == 0){
+        if(argc != 4){
+            printf("Error: remove takes Project Name and File Name as arguments");
+            return 1;
+        }
+        remove(argv[2], argv[3]);
+    }
+    else{
+        //attempt to open Config file
+        char* config = getFileContents("../.Config");
+
+        sscanf(config, "%s %d", &IP, &PORT);
+        printf("%s %d\n", IP, PORT);
+    }
     int connfd; 
     struct sockaddr_in servaddr, cli; 
   
@@ -56,20 +73,25 @@ int main()
         printf("socket creation failed...\n"); 
         exit(0); 
     } 
-    int reuseSocket = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuseSocket, sizeof(int)) < 0){
+    
+    int reuse = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0){
         error("setsockopt(SO_REUSEADDR) failed");
     }
+    else{
         printf("Socket successfully created..\n"); 
+    }
+    
     bzero(&servaddr, sizeof(servaddr)); 
   
     // assign IP, PORT 
     servaddr.sin_family = AF_INET; 
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
+    servaddr.sin_addr.s_addr = inet_addr(IP); 
     servaddr.sin_port = htons(PORT); 
   
     // connect the client socket to server socket 
     if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) { 
+        perror("bind");
         printf("connection with the server failed...\n"); 
         exit(0); 
     } 
@@ -77,10 +99,102 @@ int main()
         printf("connected to the server..\n"); 
   
     // function for chat 
-    //func(sockfd); 
-    //write(sockfd, "sc5:proj06:create", 17*sizeof(char));
-    write(sockfd, "sc5:proj07:destroy", 18*sizeof(char));
-    //write(sockfd, "abcdefghijklmnopqrstuvwxyz", 26*sizeof(char));
-    // close the socket 
+    parseInput(sockfd, argv);
+
     close(sockfd); 
 } 
+
+
+int parseInput(int sockfd, int argc, char** argv){
+    char* command = argv[1];
+    if(compareString(command, "checkout") == 0){
+        if(argc != 3){
+            printf("Error: checkout takes Project Name as only argument");
+            return -1;
+        }
+        else{
+            checkout(argv[2]);
+        }
+    }
+    if(compareString(command, "update") == 0){
+        if(argc != 3){
+            printf("Error: update takes Project Name as only argument");
+            return -1;
+        }
+        else{
+            update(argv[2]);
+        }
+    }
+    if(compareString(command, "upgrade") == 0){
+        if(argc != 3){
+            printf("Error: upgrade takes Project Name as only argument");
+            return -1;
+        }
+        else{
+            upgrade(argv[2]);
+        }
+    }
+    if(compareString(command, "commit") == 0){
+        if(argc != 3){
+            printf("Error: commit takes Project Name as only argument");
+            return -1;
+        }
+        else{
+            commit(argv[2]);
+        }
+    }
+    if(compareString(command, "push") == 0){
+        if(argc != 3){
+            printf("Error: push takes Project Name as only argument");
+            return -1;
+        }
+        else{
+            push(argv[2]);
+        }
+    }
+    if(compareString(command, "create") == 0){
+        if(argc != 3){
+            printf("Error: create takes Project Name as only argument");
+            return -1;
+        }
+        else{
+            create(argv[2]);
+        }
+    }
+    if(compareString(command, "destroy") == 0){
+        if(argc != 3){
+            printf("Error: destroy takes Project Name as only argument");
+            return -1;
+        }
+        else{
+            destroy(argv[2]);
+        }
+    }
+    if(compareString(command, "currentversion") == 0){
+        if(argc != 3){
+            printf("Error: currentversion takes Project Name as only argument");
+            return -1;
+        }
+        else{
+            currentversion(argv[2]);
+        }
+    }
+    if(compareString(command, "history") == 0){
+        if(argc != 3){
+            printf("Error: history takes Project Name as only argument");
+            return -1;
+        }
+        else{
+            history(argv[2]);
+        }
+    }
+    if(compareString(command, "rollback") == 0){
+        if(argc != 4){
+            printf("Error: history takes Project Name and version number as only arguments");
+            return -1;
+        }
+        else{
+            rollback(argv[2], argv[3]);
+        }
+    }
+}
