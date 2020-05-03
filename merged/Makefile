@@ -16,11 +16,11 @@ WTF.o:	WTF.c manifestFunc.o stringFunc.o recursiveD.o sendAndReceive.o
 sendAndReceive.o:	sendAndReceive.c manifestFunc.o stringFunc.o
 	gcc -c sendAndReceive.c
 
-WTF:	./client/clientSocket.c
-	gcc -g ./client/clientSocket.c -o ./client/WTF
+WTF:	./client/clientSocket.c WTF.o recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o
+	gcc -g ./client/clientSocket.c -o ./client/WTF WTF.o recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto
 
-WTFserver: ./server/serverSocket.c
-	gcc -g ./server/serverSocket.c -o ./server/WTFserver
+WTFserver: ./server/serverSocket.c recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o
+	gcc -g ./server/serverSocket.c -o ./server/WTFserver recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto
 
 clean:
 	rm main; rm recursiveD.o; rm stringFunc.o; rm manifestFunc.o; rm WTF.o; rm sendAndReceive.o

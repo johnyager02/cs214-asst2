@@ -5,10 +5,241 @@
 #include <string.h> 
 #include <sys/socket.h> 
 #include <sys/types.h> 
+#include <errno.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include "../stringFunc.h"
+#include "../recursiveD.h"
+#include "../sendAndReceive.h"
+#include "../manifestFunc.h"
 #define MAX 80 
 #define PORT 8080 
 #define SA struct sockaddr 
+
+int existsFile(char* filename){ 
+    int file = open(filename, O_RDONLY, 00644);
+    if(file < 0){
+        return 0;
+    }
+    else{
+        close(file);
+        return 1;
+    }
+}
+
+int existsDir(char* dirpath){
+    DIR* dirptr = opendir(dirpath);
+    if(dirptr){
+        closedir(dirptr);
+        return 1;
+    } 
+    else if(errno == ENOENT){
+        return 0;
+    }
+}
+
+
   
+// void handleClientSent(char** output){
+//     char* status = output[0];
+//     char* commandType = output[1];
+//     char* projName = output[2];
+//     char* fileName = output[3];
+//     char* data = output[4];
+
+
+// }
+
+void handleClientFetched(char** output, int clientSockFd){
+    char* status = output[0];
+    char* commandType = output[1];
+    char* projName = output[2];
+    char* fileName = output[3];
+    
+    if(existsDir(projName) != 1){
+        //Failed to find requested project
+        //send failed
+        sendData(clientSockFd, projName, "");
+    }
+    if(existsFile(fileName) != 1){
+        //Failed to find requested file
+        //send failed
+        sendData(clientSockFd, projName, "");
+    }
+
+    //Client fetched and file/project both exist -> send file that is requested
+    sendData(clientSockFd, projName, fileName);
+
+    //Free memory:
+
+}
+
+void handleClientSentCommand(char** output, int clientSockFd){
+    char* status = output[0];
+    char* commandType = output[1];
+    char* projName = output[2];
+    char* commandName = output[3];
+
+    if(compareString(commandName, "push") == 0){
+        /* The push command will fail if the project name doesn’t exist on the server.
+        The client should send its .Commit and all files listed in it to the server. 
+        The server should first lock the repository so no other command can be run on it. 
+        While the repository is locked, the server should check to see if it has a stored .Commit for the client and that it is the same as the .Commit the client just sent. 
+        If this is the case, the server should expire all other .Commits pending for any other clients, 
+        duplicate the project directory, 
+        write all the files the client sent to the newly-copied directory 
+        (or remove files, as indicated in the .Commit), 
+        update the new project directory's .Manifest by replacing corresponding entries for all files uploaded 
+        (and removing entries for all files removed) with the information in the .Commit the client sent, 
+        and increasing the project's version. 
+        The server should then unlock the repository and send a success message to the client. 
+        
+        If there is a failure at any point in this process, the server should delete any new files or directories created, 
+        unlock the repository and 
+        send a failure message to the client. */
+        printf("[handleClientSentCommand] Client sent command to push project: \"%s\"\n", projName);
+    }
+    else if(compareString(commandName, "create") == 0){
+    /*The create command will fail if the project name already exists on the server 
+    Otherwise, the server will create a project folder with the given name, initialize a .Manifest for it
+    and send it to the client.*/
+        printf("[handleClientSentCommand] Client sent command to create project: \"%s\"\n", projName);
+        
+        // Server: check if project exists:
+        if(existsDir(projName) == 1){
+            //send failure
+            sendData(clientSockFd, projName, "");
+        }
+
+        //Create proj folder w/ name
+        int makeDir = mkdir(projName, 0777);
+        //Initialize .Manifest
+        initializeManifest(projName);
+        //Send new Manifest to client
+        char* manifestPath = appendToStr(projName, "/.Manifest");
+        sendData(clientSockFd, projName, getFileContents(manifestPath));
+        //free memory:
+        int i;
+        for(i=0;i<5;i++){
+            free(output[i]);
+        }
+        free(output);
+        free(manifestPath);
+    }
+    else if(compareString(commandName, "destroy") == 0){
+        /*The destroy command will fail if the project name doesn’t exist on the server
+         On receiving a destroy command the server should lock the repository, expire any pending commits,
+        delete all files and subdirectories under the project and send back a success message.*/
+
+        //lock repository
+
+        //expire pending commits
+
+        //delete all files/subdirs under project
+
+        //send back success
+        printf("[handleClientSentCommand] Client sent command to destroy project: \"%s\"\n", projName);
+    }
+    else if(compareString(commandName, "currentversion") == 0){
+        /*The currentversion command will request from the server the current state of a project from the server. This
+        command does not require that the client has a copy of the project locally. The client should output a list of all
+        files under the project name, along with their version number (i.e., number of updates).*/
+        printf("[handleClientSentCommand] Client sent command to get currentversion of project: \"%s\"\n", projName);
+    }
+    else if(compareString(commandName, "history") == 0){
+        /*The history command will fail if the project doesn’t exist on the server
+        The server will send over a file containing the history of all operations performed on all successful pushes since the project's creation. The
+        output should be similar to the update output, but with a version number and newline separating each push's log
+        of changes.*/
+
+        //send history
+        printf("[handleClientSentCommand] Client sent command to send history of project: \"%s\"\n", projName);
+    }
+    else if(compareString(commandName, "rollback")){
+        /*The rollback command will fail if the project name doesn’t exist on the server or the version number given is invalid. 
+         The server will revert its current version of the project back to the version number requested by
+        the client by deleting all more recent versions saved on the server side.*/
+
+        //delete more recent versions past the requested version on serverside
+
+        printf("[handleClientSentCommand] Client sent command to rollback the project: \"%s\"\n", projName);
+    }
+}
+
+char** readInputFromClient(char* buff, int fd){
+    char success = buff[0];
+    if(success == 'f'){
+        printf("[readInput] Error! command could not be executed\n");
+        return NULL;
+    }
+    char commandType = buff[1];
+    char* projectLengthString = mallocStr(5);
+    int n = 2;
+    while(buff[n++] != ':'){
+        projectLengthString[n-3] = buff[n-1];
+        if((strlen(projectLengthString) % 5) == 0){
+            projectLengthString = reallocStr(projectLengthString, 5 + strlen(projectLengthString));
+        }
+    }
+    int projectLength = atoi(projectLengthString);
+    char* projectName = mallocStr(projectLength+1);
+    strncpy(projectName, buff+n, projectLength);
+    projectName[projectLength] = '\0';
+    n+= projectLength;
+    //free(projectLengthString);
+    char* fileLengthString = mallocStr(5);
+    int a = n+1;
+    while(buff[n++] != ':'){
+        fileLengthString[n-a] = buff[n-1];
+        if((strlen(fileLengthString) % 5) == 0){
+            fileLengthString = reallocStr(fileLengthString, 5 + strlen(fileLengthString));
+        }
+    }
+    int fileLength = atoi(fileLengthString);
+    char* fileName = mallocStr(fileLength+1);
+    strncpy(fileName, buff+n, fileLength);
+    fileName[fileLength] = '\0';
+    //free(fileLengthString);
+    n+=fileLength;
+
+    if(commandType == 's'){
+        a = n+1;
+        char* dataLengthString = mallocStr(5);
+        printf("%s\n", buff+n);
+        while(buff[n++] != ':'){
+            dataLengthString[n-a] = buff[n-1];
+            if((strlen(dataLengthString) % 5) == 0){
+                dataLengthString = reallocStr(dataLengthString, 5 + strlen(dataLengthString));
+            }
+        }
+        int dataLength = atoi(fileLengthString);
+        char* data = mallocStr(dataLength+1);
+        strncpy(data, buff+n, dataLength);
+        data[dataLength] = '\0';
+        //free(fileLengthString);
+        printf("[readInput] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
+
+        //handleSend
+        return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
+    }
+    else if(commandType == 'f'){
+        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+        //handleFetch
+        handleClientFetched((char**) getOutputArrFetched(success, commandType, projectName, fileName), fd);
+        return NULL;
+    }
+    else if(commandType == 'c'){
+        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+        //handleSendCommand
+        handleClientSentCommand( (char**) getOutputArrFetched(success, commandType, projectName, fileName), fd );
+        return NULL;
+    }
+    else{
+        printf("Error: command type not recognized");
+        return NULL;
+    }
+}
+
 // Function designed for chat between client and server. 
 void func(int sockfd) 
 { 
@@ -22,6 +253,7 @@ void func(int sockfd)
         read(sockfd, buff, sizeof(buff)); 
         // print buffer which contains the client contents 
         printf("From client: %s\t To client : ", buff); 
+        readInputFromClient(buff, sockfd);
         bzero(buff, MAX); 
         n = 0; 
         // copy server message in the buffer 
@@ -38,7 +270,7 @@ void func(int sockfd)
         } 
     } 
 } 
-  
+
 // Driver function 
 int main() 
 { 
