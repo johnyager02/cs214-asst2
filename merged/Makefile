@@ -24,5 +24,5 @@ clean:
 cleanManifest:	main
 	rm ./proj0/.Manifest
 
-cleanProj0: ./server/proj0/.Manifest ./server/proj0
+cleanProj0:
 	rm ./server/proj0/.Manifest; rmdir ./server/proj0

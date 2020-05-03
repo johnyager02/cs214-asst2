@@ -122,14 +122,26 @@ void handleClientSentCommand(char** output, int clientSockFd){
          On receiving a destroy command the server should lock the repository, expire any pending commits,
         delete all files and subdirectories under the project and send back a success message.*/
 
+        printf("[handleClientSentCommand] Client sent command to destroy project: \"%s\"\n", projName);
         //lock repository
 
         //expire pending commits
 
         //delete all files/subdirs under project
-
-        //send back success
-        printf("[handleClientSentCommand] Client sent command to destroy project: \"%s\"\n", projName);
+        int projLen = strlen(projName);
+        if(projName[projLen - 1] != '/'){
+            char* oldStr = projName;
+            projName = appendToStr(projName, "/");
+            free(oldStr);
+        }
+        recursiveDelete(projName);
+        if(isEmptyDir(projName)){
+            printf("[handleClientSentCommand] Deleted proj: \"%s\"\n", projName);
+            //send back success
+            
+        } else printf("[handleClientSentCommand] Failed to delete proj: \"%s\"\n", projName);
+        
+        
     }
     else if(compareString(commandName, "currentversion") == 0){
         /*The currentversion command will request from the server the current state of a project from the server. This
@@ -244,7 +256,7 @@ void func(int sockfd)
     for (;;) { 
         bzero(buff, currentBufferSize + 1); 
         // read the message from client and copy it in buffer
-        printf("[func] Reading message now: \n");
+        //printf("[func] Reading message now: \n");
         while((numBytesRead = read(sockfd, buff + totalReadInBytes, 5*sizeof(char))) != 0){
             
             printf("[func] Current buffer is: \"%s\"\n", buff);
@@ -265,13 +277,13 @@ void func(int sockfd)
         }
         // print buffer which contains the client contents 
         //printf("From client: %s\t To client : ", buff); 
-        printf("[func] Done reading input\n");
+        //printf("[func] Done reading input\n");
         bzero(buff, currentBufferSize); 
         totalReadInBytes = 0;  
         numBytesRead = 0;
         currentBufferSize = BUFFSIZE;
         buff = (char*) reallocStr( buff, currentBufferSize + 1);
-        printf("[func] Current buffer size is: %d\n", currentBufferSize);
+        //printf("[func] Current buffer size is: %d\n", currentBufferSize);
         n = 0; 
         // copy server message in the buffer 
         // while ((buff[n++] = getchar()) != '\n') 

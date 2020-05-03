@@ -56,7 +56,10 @@ int main()
         printf("socket creation failed...\n"); 
         exit(0); 
     } 
-    else
+    int reuseSocket = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuseSocket, sizeof(int)) < 0){
+        error("setsockopt(SO_REUSEADDR) failed");
+    }
         printf("Socket successfully created..\n"); 
     bzero(&servaddr, sizeof(servaddr)); 
   
@@ -75,7 +78,8 @@ int main()
   
     // function for chat 
     //func(sockfd); 
-    write(sockfd, "sc5:proj06:create", 17*sizeof(char));
+    //write(sockfd, "sc5:proj06:create", 17*sizeof(char));
+    write(sockfd, "sc5:proj07:destroy", 18*sizeof(char));
     //write(sockfd, "abcdefghijklmnopqrstuvwxyz", 26*sizeof(char));
     // close the socket 
     close(sockfd); 
