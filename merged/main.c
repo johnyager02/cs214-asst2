@@ -15,7 +15,7 @@ int main(int argc, char** argv){
     //Test recursivePrintDir(filpath); ->Works!
     //recursivePrintDir("./"); 
     
-    //Test printHashR(filepath); ->Works!
+    //Test printHashR(filepath); ->Works with / at the end!
     //printHashR("proj0/");
 
     //Test initializeManifest(project)
@@ -154,5 +154,15 @@ int main(int argc, char** argv){
 
     //Test create()
     //create("proj0", 1234);
+
+    //Test recursiveDelete() -> works only with / at the end of initial Dirpath
+    //recursiveDelete("testDelete/");
+
+    //Test isEmptyDir() -> Works!
+    // if(isEmptyDir("testDelete")){
+    //     printf("IS EMPTY\n");
+    // }else printf("NOT EMPTY\n");
+
+
     return 0;
 }

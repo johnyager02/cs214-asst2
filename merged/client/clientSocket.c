@@ -20,6 +20,8 @@
 #define MAX 80 
 #define SA struct sockaddr 
 int parseInput(int, char**);
+=======
+
   
 int main(int argc, char** argv) { 
     char* command = argv[1];
@@ -71,6 +73,7 @@ int main(int argc, char** argv) {
         printf("socket creation failed...\n"); 
         exit(0); 
     } 
+    
     int reuse = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0){
         error("setsockopt(SO_REUSEADDR) failed");
@@ -97,7 +100,7 @@ int main(int argc, char** argv) {
   
     // function for chat 
     parseInput(sockfd, argv);
-    // close the socket 
+
     close(sockfd); 
 } 
 
