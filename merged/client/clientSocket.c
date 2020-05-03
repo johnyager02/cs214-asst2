@@ -76,6 +76,7 @@ int main()
     // function for chat 
     //func(sockfd); 
     write(sockfd, "sc5:proj06:create", 17*sizeof(char));
+    //write(sockfd, "abcdefghijklmnopqrstuvwxyz", 26*sizeof(char));
     // close the socket 
     close(sockfd); 
 } 

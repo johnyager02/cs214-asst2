@@ -106,14 +106,16 @@ void handleClientSentCommand(char** output, int clientSockFd){
         initializeManifest(projName);
         //Send new Manifest to client
         char* manifestPath = appendToStr(projName, "/.Manifest");
-        sendData(clientSockFd, projName, getFileContents(manifestPath));
+        char* filecontents = getFileContents(manifestPath);
+        printf("[handleClientSentCommand] filecontents is: \"%s\"\n", filecontents);
+        //sendData(clientSockFd, projName, filecontents);
         //free memory:
-        int i;
-        for(i=0;i<5;i++){
-            free(output[i]);
-        }
-        free(output);
-        free(manifestPath);
+        // int i;
+        // for(i=0;i<5;i++){
+        //     free(output[i]);
+        // }
+        // free(output);
+        // free(manifestPath);
     }
     else if(compareString(commandName, "destroy") == 0){
         /*The destroy command will fail if the project name doesn’t exist on the server
@@ -240,8 +242,9 @@ void func(int sockfd)
     int currentBufferSize = BUFFSIZE;
     // infinite loop for chat 
     for (;;) { 
-        bzero(buff, currentBufferSize); 
+        bzero(buff, currentBufferSize + 1); 
         // read the message from client and copy it in buffer
+        printf("[func] Reading message now: \n");
         while((numBytesRead = read(sockfd, buff + totalReadInBytes, 5*sizeof(char))) != 0){
             
             printf("[func] Current buffer is: \"%s\"\n", buff);
@@ -256,14 +259,19 @@ void func(int sockfd)
             }
             printf("[func] totalReadInBytes is: %d\n", totalReadInBytes);
         }
-        if(strlen(buff) != 0){
-            printf("[func] final buffer after read is: \"%s\"\n", buff);  
+        if(strlen(buff) != 0){ // done reading
+            printf("[func] final buffer after read is: \"%s\"\n", buff);
+            readInputFromClient(buff, sockfd);
         }
-        
         // print buffer which contains the client contents 
         //printf("From client: %s\t To client : ", buff); 
-        //readInputFromClient(buff, sockfd);
+        printf("[func] Done reading input\n");
         bzero(buff, currentBufferSize); 
+        totalReadInBytes = 0;  
+        numBytesRead = 0;
+        currentBufferSize = BUFFSIZE;
+        buff = (char*) reallocStr( buff, currentBufferSize + 1);
+        printf("[func] Current buffer size is: %d\n", currentBufferSize);
         n = 0; 
         // copy server message in the buffer 
         // while ((buff[n++] = getchar()) != '\n') 
