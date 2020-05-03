@@ -51,8 +51,11 @@ int main()
         printf("socket creation failed...\n"); 
         exit(0); 
     } 
-    else
-        printf("Socket successfully created..\n"); 
+    int reuse = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0){
+        error("setsockopt(SO_REUSEADDR) failed");
+    }
+    printf("Socket successfully created..\n"); 
     bzero(&servaddr, sizeof(servaddr)); 
   
     // assign IP, PORT 

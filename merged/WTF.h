@@ -8,7 +8,7 @@ void update(char* );
 void upgrade(char* );
 void commit(char* );
 void push(char* e);
-void create(char* );
+void create(char* , int);
 void destroy(char* );
 void add(char* , char* );
 void removeEntry(char* , char* );

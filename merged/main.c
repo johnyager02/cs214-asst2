@@ -151,5 +151,8 @@ int main(int argc, char** argv){
     //Test getNumLines()
     //printf("[Main] Number of lines in file: \"%s\" is %d\n", "proj0/.Manifest", getNumLines("proj0/.Manifest"));
     //printf("[Main] Number of lines in file: \"%s\" is %d\n", "proj0/.Manifest", getNumLines("proj0/.Manifest"));
+
+    //Test create()
+    //create("proj0", 1234);
     return 0;
 }

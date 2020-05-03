@@ -4,11 +4,11 @@
 #include"manifestFunc.h"
 #include<string.h>
 
-void readInput(char* buff, int fd){
+char** readInput(char* buff, int fd){
     char success = buff[0];
     if(success == 'f'){
         printf("[readInput] Error! command could not be executed\n");
-        return;
+        return NULL;
     }
     char commandType = buff[1];
     char* projectLengthString = mallocStr(5);
@@ -58,48 +58,105 @@ void readInput(char* buff, int fd){
         printf("[readInput] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
 
         //handleSend
+        return getOutputArrSent(success, commandType, projectName, fileName, data);
     }
     else if(commandType == 'f'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleFetch
+        return getOutputArrFetched(success, commandType, projectName, fileName);
     }
     else if(commandType == 'c'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleSendCommand
+        return getOutputArrFetched(success, commandType, projectName, fileName);
     }
     else{
         printf("Error: command type not recognized");
-        return;
+        return NULL;
     }
 }
 
+char** getOutputArrSent(char status, char commandType, char* projectName, char* fileName, char* data){
+    
+    char* statusStr = (char*) mallocStr(2);
+    memset(statusStr, status, 1*sizof(char));
+    memset(statusStr + 1, '\0', 1*sizeof(char));
 
-send(int sockfd, char* projectName, char* fileName){
+    char* commandTypeStr = (char*) mallocStr(2);
+    memset(commandTypeStr, commandType, 1*sizof(char));
+    memset(commandTypeStr + 1, '\0', 1*sizeof(char));
+
+    char** output = (char*) malloc(5*sizeof(*output));
+    output[0] = statusStr;
+    output[1] = commandTypeStr;
+    output[2] = projectName;
+    output[3] = fileName;
+    output[4] = data;
+    return output;
+}
+
+char** getOutputArrFetched(char status, char commandType, char* projectName, char* fileName){
+    
+    char* statusStr = (char*) mallocStr(2);
+    memset(statusStr, status, 1*sizof(char));
+    memset(statusStr + 1, '\0', 1*sizeof(char));
+
+    char* commandTypeStr = (char*) mallocStr(2);
+    memset(commandTypeStr, commandType, 1*sizof(char));
+    memset(commandTypeStr + 1, '\0', 1*sizeof(char));
+
+    char** output = (char*) malloc(4*sizeof(*output));
+    output[0] = statusStr;
+    output[1] = commandTypeStr;
+    output[2] = projectName;
+    output[3] = fileName;
+    return output;
+}
+
+
+void send(int sockfd, char* projectName, char* fileName){
     int projectLengthInt = strlen(projectName);
     char* projectLengthString = numToStr(projectLengthInt);
     int fileLengthInt = strlen(fileName);
-    char* fileLengthString = numToStr(projectLengthInt);
+    char* fileLengthString = numToStr(fileLengthInt);
     char* data = getFileContents(fileName);
     //char* data = "file contents are right here";
     int dataLengthInt = strlen(data);
     char* dataLengthString = numToStr(dataLengthInt);
     char success = (dataLengthInt < 1) ? 'f' : 's';
-    char* buff = mallocStr(2 + 1 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + strlen(dataLengthString) + 1 + dataLengthInt + 1);
-    sprintf(buff, "%c%c%s:%s%s:%s%s:%s", 's', success, projectLengthString, projectName, fileLengthString, fileName, dataLengthString, data);
-    buff[2 + 1 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + strlen(dataLengthString) + 1 + dataLengthInt + 1] = '\0';
-    printf("[send] %s\n", buff);
-    //write(sockfd, buff, sizeof(buff))
+    char* buff = mallocStr(2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + strlen(dataLengthString) + 1 + dataLengthInt + 1);
+    sprintf(buff, "%c%c%s:%s%s:%s%s:%s", success, 's', projectLengthString, projectName, fileLengthString, fileName, dataLengthString, data);
+    buff[2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + strlen(dataLengthString) + 1 + dataLengthInt] = '\0';
+    printf("[send] \"%s\"\n", buff);
+    //write(sockfd, buff, sizeof(buff));
 }
 
-fetch(int sockfd, char* projectName, char* fileName){
+void fetch(int sockfd, char* projectName, char* fileName){
     int projectLengthInt = strlen(projectName);
     char* projectLengthString = numToStr(projectLengthInt);
     int fileLengthInt = strlen(fileName);
-    char* fileLengthString = numToStr(projectLengthInt);
+    char* fileLengthString = numToStr(fileLengthInt);
     char success = (fileLengthInt < 1) ? 'f' : 's';
-    char* buff = mallocStr(2 + 1 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + 1);
-    sprintf(buff, "%c%c%s:%s%s:%s", 's', success, projectLengthString, projectName, fileLengthString, fileName);
-    buff[2 + 1 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + 1] = '\0';
-    printf("[fetch] %s\n", buff);
-    //write(sockfd, buff, sizeof(buff))
+    char* buff = mallocStr(2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + 1);
+    sprintf(buff, "%c%c%s:%s%s:%s", success, 'f' , projectLengthString, projectName, fileLengthString, fileName);
+    buff[2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt] = '\0';
+    printf("[fetch] \"%s\"\n", buff);
+    //write(sockfd, buff, sizeof(buff));
+}
+
+void sendCommand(int sockfd, char* projectName, char* commandName){
+    //Initialize projectLen to send
+    int projectLengthInt = strlen(projectName);
+    char* projectLengthString = numToStr(projectLengthInt);
+
+    //Initialize commandLen to send
+    int commandLengthInt = strlen(commandName);
+    char* commandLengthString = numToStr(commandLengthInt);
+
+    char success = (commandLengthInt < 1) ? 'f' : 's';
+    char* buff = mallocStr(2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(commandLengthString) + 1 + commandLengthInt + 1);
+    sprintf(buff, "%c%c%s:%s%s:%s", success, 'c' , projectLengthString, projectName, commandLengthString, commandName);
+    buff[2 +  strlen(projectLengthString) + 1 + projectLengthInt + strlen(commandLengthString) + 1 + commandLengthInt] = '\0';
+    printf("[send] \"%s\"\n", buff);
+    //write(sockfd, buff, sizeof(buff));
 }

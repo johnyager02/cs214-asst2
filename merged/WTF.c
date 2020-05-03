@@ -133,44 +133,35 @@ void push(char* projname){
 
 }
 
-void create(char* projname){
-    //START SERVERSIDE:
+void create(char* projname, int sockfd){
+    //1) Client sendCommand -> "create" 
+    //sendCommand(sockfd, projname, "create");
 
-    //Server: check if project exists:
+    //2) Serverside:
+
+    //START SERVERSIDE:
+    //2) Server receivesCommand as char* array from readinput();
+    char** output;
+    // Server: check if project exists:
     if(existsDir(projname) == 1){
         //fail
+        send(sockfd, projname, "");
     }
 
-    //Server: create project folder with name: projname
+    // //Server: create project folder with name: projname
     int makeDir = mkdir(projname, 0777);
     initializeManifest(projname);
     
-    int projectNameLenInt = strlen(projname);
-    char* projectNameLen = numToStr(projectNameLenInt);
+    // int projectNameLenInt = strlen(projname);
+    // char* projectNameLen = numToStr(projectNameLenInt);
     
-    char* manifestPath = appendToStr(projname, "/.Manifest");
-    int fileNameLenInt = strlen(manifestPath);
-    char* fileNameLen = numToStr(fileNameLenInt);
-    
+    // char* manifestPath = appendToStr(projname, "/.Manifest");
 
 
-    char* manifestData = getFileContents(manifestPath);
-    int manifestDataLenInt = strlen(manifestData);
-    char* manifestDataLen = numToStr(manifestDataLenInt);
-
-    int totalBufferSize = 2 + strlen(projectNameLen) + 1 + strlen(projname) + strlen(fileNameLen) + 1 + strlen(manifestPath) + strlen(manifestDataLen) + 1 + strlen(manifestData);
-    char* sendServerToClientCreate = (char*) mallocStr(totalBufferSize + 1);
-    memset(sendServerToClientCreate, '\0', (totalBufferSize+1)*sizeof(char));
                                                             //<s><s><projectNameLength>:<projectName><fileNameLength>:<fileName>|<dataLength>:<data>|
-    sprintf(sendServerToClientCreate, "%c%c%s:%s%s:%s%s:%s", 's', 's', projectNameLen, projname, fileNameLen, manifestPath, manifestDataLen, manifestData);
     //ServerL send manifestData -> client: send: sendServerToClientCreate str
 
-    free(manifestPath);
-    free(manifestData);
-    free(projectNameLen);
-    free(fileNameLen);
-    free(manifestDataLen);
-    free(sendServerToClientCreate);
+    
 
 
     //START CLIENTSIDE:
