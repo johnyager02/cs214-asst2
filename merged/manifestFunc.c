@@ -58,10 +58,10 @@ char* getProjVersion(char* projname){//Finds the manifest for project and return
 
     int numBytesRead = 0;
     int totalReadInBytes = 0;
-    int indexToCopy = 0;
+    //int indexToCopy = 0;
     int currentBufferSize = strlen(projVersion);
     do{
-        numBytesRead = read(manifestFile, projVersion + indexToCopy, 1*sizeof(char));
+        numBytesRead = read(manifestFile, projVersion + totalReadInBytes, 1*sizeof(char));
         totalReadInBytes+=numBytesRead;
         if(totalReadInBytes == currentBufferSize){// Realloc buffer
             projVersion = (char*) reallocStr(projVersion, 2*currentBufferSize + 1);
@@ -84,7 +84,7 @@ char* getProjVersion(char* projname){//Finds the manifest for project and return
                 return projVersion;
             }
         }
-        indexToCopy++;
+        //indexToCopy++;
     }while(numBytesRead!=0);
     close(manifestFile);
     return NULL;

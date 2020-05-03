@@ -19,10 +19,8 @@
 #include "../WTF.h"
 #define MAX 80 
 #define SA struct sockaddr 
-int parseInput(int, char**);
-=======
+int parseInput(int, int, char**);
 
-  
 int main(int argc, char** argv) { 
     char* command = argv[1];
 
@@ -55,7 +53,7 @@ int main(int argc, char** argv) {
             printf("Error: remove takes Project Name and File Name as arguments");
             return 1;
         }
-        remove(argv[2], argv[3]);
+        removeEntry(argv[2], argv[3]);
     }
     else{
         //attempt to open Config file
@@ -99,7 +97,7 @@ int main(int argc, char** argv) {
         printf("connected to the server..\n"); 
   
     // function for chat 
-    parseInput(sockfd, argv);
+    parseInput(sockfd, argc, argv);
 
     close(sockfd); 
 } 
@@ -113,7 +111,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            checkout(argv[2]);
+            checkout(argv[2], sockfd);
         }
     }
     if(compareString(command, "update") == 0){
@@ -122,7 +120,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            update(argv[2]);
+            update(argv[2], sockfd);
         }
     }
     if(compareString(command, "upgrade") == 0){
@@ -131,7 +129,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            upgrade(argv[2]);
+            upgrade(argv[2], sockfd);
         }
     }
     if(compareString(command, "commit") == 0){
@@ -140,7 +138,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            commit(argv[2]);
+            commit(argv[2], sockfd);
         }
     }
     if(compareString(command, "push") == 0){
@@ -149,7 +147,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            push(argv[2]);
+            push(argv[2], sockfd);
         }
     }
     if(compareString(command, "create") == 0){
@@ -158,7 +156,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            create(argv[2]);
+            create(argv[2], sockfd);
         }
     }
     if(compareString(command, "destroy") == 0){
@@ -167,7 +165,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            destroy(argv[2]);
+            destroy(argv[2], sockfd);
         }
     }
     if(compareString(command, "currentversion") == 0){
@@ -176,7 +174,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            currentversion(argv[2]);
+            currentversion(argv[2], sockfd);
         }
     }
     if(compareString(command, "history") == 0){
@@ -185,7 +183,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            history(argv[2]);
+            history(argv[2], sockfd);
         }
     }
     if(compareString(command, "rollback") == 0){
@@ -194,7 +192,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            rollback(argv[2], argv[3]);
+            rollback(argv[2], atoi(argv[3]), sockfd);
         }
     }
 }

@@ -85,19 +85,19 @@ void configure(char* hostname, char* port){
     //create ./configure file that contains IP and port 
 }
 
-void checkout(char* projname){
+void checkout(char* projname, int sockfd){
 
 }
 
-void update(char* projname){
+void update(char* projname, int sockfd){
 
 }
 
-void upgrade(char* projname){
+void upgrade(char* projname, int sockfd){
 
 }
 
-void commit(char* projname){
+void commit(char* projname, int sockfd){
     //START SERVERSIDE:
     if(existsFile(projname) == 0){
         //fail
@@ -129,7 +129,7 @@ void commit(char* projname){
     return;
 }
 
-void push(char* projname){
+void push(char* projname, int sockfd){
 
 }
 
@@ -184,7 +184,7 @@ void create(char* projname, int sockfd){
     // free(manifestPath);
 }
 
-void destroy(char* projname){
+void destroy(char* projname, int sockfd){
 
 }
 
@@ -229,7 +229,7 @@ void removeEntry(char* projname, char* filename){ // Expects projname as format:
     removeLine(manifestPath, lineNumToDelete);
 }
 
-void currentversion(char* projname){
+void currentversion(char* projname, int sockfd){
     int projNameLen = strlen(projname);
     char* manifestPath = appendToStr(projname, "/.Manifest");
     char currentVersion[] = "currentVersion";
@@ -283,10 +283,10 @@ void currentversion(char* projname){
     }
 }
 
-void history(char* projname){
+void history(char* projname, int sockfd){
 
 }
 
-void rollback(char* projname, int version){
+void rollback(char* projname, int version, int sockfd){
     
 }

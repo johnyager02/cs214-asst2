@@ -3,18 +3,18 @@
 
 int existsFile(char*);
 void configure(char*, char*);
-void checkout(char* );
-void update(char* );
-void upgrade(char* );
-void commit(char* );
-void push(char* e);
+void checkout(char*, int);
+void update(char*, int );
+void upgrade(char* ,int);
+void commit(char* , int);
+void push(char* , int);
 void create(char* , int);
-void destroy(char* );
+void destroy(char* , int);
 void add(char* , char* );
 void removeEntry(char* , char* );
-void currentversion(char* );
-void history(char* );
-void rollback(char* , int );
+void currentversion(char*, int );
+void history(char* , int);
+void rollback(char* ,int, int );
 char* nthDirPathToName(char*, int);
 char* filepathToName(char*);
 int existsFile(char*);
