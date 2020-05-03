@@ -108,7 +108,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
         char* manifestPath = appendToStr(projName, "/.Manifest");
         char* filecontents = getFileContents(manifestPath);
         printf("[handleClientSentCommand] filecontents is: \"%s\"\n", filecontents);
-        //sendData(clientSockFd, projName, filecontents);
+        sendData(clientSockFd, projName, manifestPath);
         //free memory:
         // int i;
         // for(i=0;i<5;i++){
@@ -172,6 +172,9 @@ void handleClientSentCommand(char** output, int clientSockFd){
 char** readInputFromClient(char* buff, int fd){
     printf("%s\n", buff);
     char success = buff[0];
+    if(success != 'f' || success != 's'){
+        return;
+    }
     if(success == 'f'){
         printf("[readInput] Error! command could not be executed\n");
         return NULL;
@@ -272,6 +275,7 @@ void func(int sockfd){
             }
             printf("[func] totalReadInBytes is: %d\n", totalReadInBytes);
         }
+        //printf("[func] Done reading input\n");
         if(strlen(buff) != 0){ // done reading
             printf("[func] final buffer after read is: \"%s\"\n", buff);
             readInputFromClient(buff, sockfd);
@@ -315,7 +319,7 @@ int main(int argc, char** argv)
         exit(0); 
     } 
     int reuse = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0){
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &reuse, sizeof(int)) < 0){
         error("setsockopt(SO_REUSEADDR) failed");
     }
     printf("Socket successfully created..\n"); 

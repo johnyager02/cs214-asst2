@@ -10,7 +10,110 @@
 #include"manifestFunc.h"
 #include"sendAndReceive.h"
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#define BUFFSIZE 10
+void handleServerFetched(char** output, int clientSockFd){
+    char* status = output[0];
+    char* commandType = output[1];
+    char* projName = output[2];
+    char* fileName = output[3];
+    
+    if(existsDir(projName) != 1){
+        //Failed to find requested project
+        //send failed
+        sendData(clientSockFd, projName, "");
+    }
+    if(existsFile(fileName) != 1){
+        //Failed to find requested file
+        //send failed
+        sendData(clientSockFd, projName, "");
+    }
 
+    //Client fetched and file/project both exist -> send file that is requested
+    sendData(clientSockFd, projName, fileName);
+
+    //Free memory:
+
+}
+
+char** readInputFromServer(char* buff, int fd){
+    printf("%s\n", buff);
+    char success = buff[0];
+    if(success != 'f' || success != 's'){
+        return;
+    }
+    if(success == 'f'){
+        printf("[readInput] Error! command could not be executed\n");
+        return NULL;
+    }
+    char commandType = buff[1];
+    char* projectLengthString = mallocStr(5);
+    int n = 2;
+    while(buff[n++] != ':'){
+        projectLengthString[n-3] = buff[n-1];
+        if((strlen(projectLengthString) % 5) == 0){
+            projectLengthString = reallocStr(projectLengthString, 5 + strlen(projectLengthString));
+        }
+    }
+    int projectLength = atoi(projectLengthString);
+    char* projectName = mallocStr(projectLength+1);
+    strncpy(projectName, buff+n, projectLength);
+    projectName[projectLength] = '\0';
+    n+= projectLength;
+    //free(projectLengthString);
+    char* fileLengthString = mallocStr(5);
+    int a = n+1;
+    while(buff[n++] != ':'){
+        fileLengthString[n-a] = buff[n-1];
+        if((strlen(fileLengthString) % 5) == 0){
+            fileLengthString = reallocStr(fileLengthString, 5 + strlen(fileLengthString));
+        }
+    }
+    int fileLength = atoi(fileLengthString);
+    char* fileName = mallocStr(fileLength+1);
+    strncpy(fileName, buff+n, fileLength);
+    fileName[fileLength] = '\0';
+    //free(fileLengthString);
+    n+=fileLength;
+
+    if(commandType == 's'){
+        a = n+1;
+        char* dataLengthString = mallocStr(5);
+        printf("%s\n", buff+n);
+        while(buff[n++] != ':'){
+            dataLengthString[n-a] = buff[n-1];
+            if((strlen(dataLengthString) % 5) == 0){
+                dataLengthString = reallocStr(dataLengthString, 5 + strlen(dataLengthString));
+            }
+        }
+        int dataLength = atoi(fileLengthString);
+        char* data = mallocStr(dataLength+1);
+        strncpy(data, buff+n, dataLength);
+        data[dataLength] = '\0';
+        //free(fileLengthString);
+        printf("[readInput] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
+
+        //handleSend
+        return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
+    }
+    else if(commandType == 'f'){
+        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+        //handleFetch
+        handleServerFetched((char**) getOutputArrFetched(success, commandType, projectName, fileName), fd);
+        return NULL;
+    }
+    else if(commandType == 'c'){
+        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+        //handleSendCommand
+        //handleServerSentCommand( (char**) getOutputArrFetched(success, commandType, projectName, fileName), fd );
+        return NULL;
+    }
+    else{
+        printf("Error: command type not recognized");
+        return NULL;
+    }
+}
 //NOTE! format of names in arguments for filenams/dirnames: "file1" || "sub0/subsub92/file716"
 
 int existsFile(char* filename){ 
@@ -135,51 +238,63 @@ void push(char* projname, int sockfd){
 
 void create(char* projname, int sockfd){
     //1) Client sendCommand -> "create" 
-    //sendCommand(sockfd, projname, "create");
+    sendCommand(sockfd, projname, "create");
 
-    //2) Serverside:
-
-    //START SERVERSIDE:
-    //2) Server receivesCommand as char* array from readinput();
-    char** output;
-    // Server: check if project exists:
-    if(existsDir(projname) == 1){
-        //fail
-        send(sockfd, projname, "");
-    }
-
-    // //Server: create project folder with name: projname
-    int makeDir = mkdir(projname, 0777);
-    initializeManifest(projname);
-    
-    // int projectNameLenInt = strlen(projname);
-    // char* projectNameLen = numToStr(projectNameLenInt);
-    
-    // char* manifestPath = appendToStr(projname, "/.Manifest");
-
-
-                                                            //<s><s><projectNameLength>:<projectName><fileNameLength>:<fileName>|<dataLength>:<data>|
-    //ServerL send manifestData -> client: send: sendServerToClientCreate str
-
-    
-
-
-    //START CLIENTSIDE:
+    //START CLIENTSIDE: receiving message
     //Client: Receives sendServerToClientCreate string and then parses...-> 
-    // char* filedata;
-    // char* projname;
-    // int makeDir = mkdir(projname, 0777);
-    // char* manifestPath = appendToStr(projname, "/.Manifest");
-    // int manifestFileClient = open(manifestPath, O_RDWR | O_CREAT, 00644);
-    // int numBytesToWrite = strlen(filedata);
-    // int numBytesWritten = 0;
-    // int totalNumBytesWritten = 0;
-    // while(numBytesToWrite > 0){
-    //     numBytesWritten = write(manifestFileClient, filedata + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
-    //     numBytesToWrite-=numBytesWritten;
-    //     totalNumBytesWritten+=numBytesWritten;
-    // }
-    // close(manifestFileClient);
+    char* buff = (char*) mallocStr(BUFFSIZE+1);
+    bzero(buff, (BUFFSIZE+1)*sizeof(char)); 
+    int n; 
+    int numBytesRead = 0;
+    int totalReadInBytes = 0;
+    int currentBufferSize = BUFFSIZE;
+    char** output;
+    while((numBytesRead = recv(sockfd, buff + totalReadInBytes, 5*sizeof(char), MSG_DONTWAIT)) != 0){
+            if(numBytesRead>0){
+                printf("[func] Current buffer is: \"%s\"\n", buff);
+            totalReadInBytes+=numBytesRead;
+            printf("[func] NumBytesRead is: %d\n", numBytesRead);
+            if(totalReadInBytes==currentBufferSize){//realloc buff
+                printf("[func] Reallocing buffer\n");
+                buff = (char*) reallocStr(buff, 2*currentBufferSize + 1);
+                currentBufferSize = 2*currentBufferSize;
+                printf("[func] Current buffer size is: %d\n", currentBufferSize);
+                memset(buff + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
+            }
+            printf("[func] totalReadInBytes is: %d\n", totalReadInBytes);
+            }
+        }
+        if(strlen(buff) != 0){ // done reading
+        printf("[func] final buffer after read is: \"%s\"\n", buff);
+        output = readInputFromServer(buff, sockfd);
+    }
+    if(output == NULL){
+        printf("[create] Failed!\n");
+        close(sockfd);
+        return;
+    }
+    if(output[0][0] == 'f'){
+        printf("[create] Failed!\n");
+        close(sockfd);
+        return;
+    }
+    char* filedata = output[4];
+    int makeDir = mkdir(projname, 0777);
+    char* manifestPath = appendToStr(projname, "/.Manifest");
+    int manifestFileClient = open(manifestPath, O_RDWR | O_CREAT, 00644);
+    int numBytesToWrite = strlen(filedata);
+    int numBytesWritten = 0;
+    int totalNumBytesWritten = 0;
+    while(numBytesToWrite > 0){
+        numBytesWritten = write(manifestFileClient, filedata + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
+        numBytesToWrite-=numBytesWritten;
+        totalNumBytesWritten+=numBytesWritten;
+    }
+    close(manifestFileClient);
+    close(sockfd);
+    if(totalNumBytesWritten == strlen(filedata)){
+        printf("[create] Success!\n");
+    }
     // free(filedata);
     // free(manifestPath);
 }

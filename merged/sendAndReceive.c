@@ -131,6 +131,15 @@ void sendData(int sockfd, char* projectName, char* fileName){
     sprintf(buff, "%c%c%s:%s%s:%s%s:%s", success, 's', projectLengthString, projectName, fileLengthString, fileName, dataLengthString, data);
     buff[2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + strlen(dataLengthString) + 1 + dataLengthInt] = '\0';
     printf("[send] \"%s\"\n", buff);
+    
+    int numBytesToWrite = strlen(buff);
+    int numBytesWritten = 0;
+    int totalNumBytesWritten = 0;
+    while(numBytesToWrite > 0){
+        numBytesWritten = write(sockfd, buff + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
+        numBytesToWrite-=numBytesWritten;
+        totalNumBytesWritten+=numBytesWritten;
+    }
     //write(sockfd, buff, sizeof(buff));
 }
 
@@ -144,6 +153,15 @@ void fetchData(int sockfd, char* projectName, char* fileName){
     sprintf(buff, "%c%c%s:%s%s:%s", success, 'f' , projectLengthString, projectName, fileLengthString, fileName);
     buff[2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt] = '\0';
     printf("[fetch] \"%s\"\n", buff);
+
+    int numBytesToWrite = strlen(buff);
+    int numBytesWritten = 0;
+    int totalNumBytesWritten = 0;
+    while(numBytesToWrite > 0){
+        numBytesWritten = write(sockfd, buff + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
+        numBytesToWrite-=numBytesWritten;
+        totalNumBytesWritten+=numBytesWritten;
+    }
     //write(sockfd, buff, sizeof(buff));
 }
 
@@ -161,5 +179,14 @@ void sendCommand(int sockfd, char* projectName, char* commandName){
     sprintf(buff, "%c%c%s:%s%s:%s", success, 'c' , projectLengthString, projectName, commandLengthString, commandName);
     buff[2 +  strlen(projectLengthString) + 1 + projectLengthInt + strlen(commandLengthString) + 1 + commandLengthInt] = '\0';
     printf("[send] \"%s\"\n", buff);
+
+    int numBytesToWrite = strlen(buff);
+    int numBytesWritten = 0;
+    int totalNumBytesWritten = 0;
+    while(numBytesToWrite > 0){
+        numBytesWritten = write(sockfd, buff + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
+        numBytesToWrite-=numBytesWritten;
+        totalNumBytesWritten+=numBytesWritten;
+    }
     //write(sockfd, buff, sizeof(buff));
 }

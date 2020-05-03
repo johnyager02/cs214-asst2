@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
     } 
     
     int reuse = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0){
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &reuse, sizeof(int)) < 0){
         error("setsockopt(SO_REUSEADDR) failed");
     }
     else{
