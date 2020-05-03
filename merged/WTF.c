@@ -82,7 +82,7 @@ char* nthDirPathToName(char* dirpath, int n){ //given dirpath -> return nth dirn
 
 
 void configure(char* hostname, char* port){
-
+    //create ./configure file that contains IP and port 
 }
 
 void checkout(char* projname){
@@ -133,54 +133,44 @@ void push(char* projname){
 
 }
 
-void create(char* projname, int serverSockFd){
-    //START CLIENTSIDE 1:
+void create(char* projname, int sockfd){
     //1) Client sendCommand -> "create" 
-    //sendCommand(serverSockFd, projname, "create");
-    //END CLIENTSIDE 1:
+    //sendCommand(sockfd, projname, "create");
 
+    //2) Serverside:
 
     //START SERVERSIDE:
-    // //2) Server receivesCommand as char* array from readinput();
-    // char** output;
-    // // Server: check if project exists:
-    // if(existsDir(projname) == 1){
-    //     //send failure
-    //     send(clientSockFd, projname, "");
-    // }
+    //2) Server receivesCommand as char* array from readinput();
+    char** output;
+    // Server: check if project exists:
+    if(existsDir(projname) == 1){
+        //fail
+        send(sockfd, projname, "");
+    }
 
-    // // //Server: create project folder with name: projname
-    // //make new proj dir:
-    // int makeDir = mkdir(projname, 0777);
-    // //Initialize .Manifest in that directory
-    // initializeManifest(projname);
-    // //Send new Manifest to client
+    // //Server: create project folder with name: projname
+    int makeDir = mkdir(projname, 0777);
+    initializeManifest(projname);
+    
+    // int projectNameLenInt = strlen(projname);
+    // char* projectNameLen = numToStr(projectNameLenInt);
+    
     // char* manifestPath = appendToStr(projname, "/.Manifest");
-    // send(clientSockFd, projname, getFileContents(manifestPath));
 
-    // //free memory:
-    // int i;
-    // for(i=0;i<5;i++){
-    //     free(output[i]);
-    // }
-    // free(output);
-    // free(manifestPath);
-    //END SERVERSIDE
 
-    //START CLIENTSIDE 2:
-    //Client: Receives manifestData str array and then parses...-> 
-    // char** output;
-    // char* status = output[0];
-    // char* commandType = output[1];
-    // char* projName = output[2];
-    // char* fileName = output[3];
-    // char* filedata = output[4];
+                                                            //<s><s><projectNameLength>:<projectName><fileNameLength>:<fileName>|<dataLength>:<data>|
+    //ServerL send manifestData -> client: send: sendServerToClientCreate str
+
     
-    // //Client makes proj dir
-    // int makeDir = mkdir(projName, 0777);
-    
-    // //Creates manifest and writes manifest data from server to manifest
-    // int manifestFileClient = open(fileName, O_RDWR | O_CREAT, 00644);
+
+
+    //START CLIENTSIDE:
+    //Client: Receives sendServerToClientCreate string and then parses...-> 
+    // char* filedata;
+    // char* projname;
+    // int makeDir = mkdir(projname, 0777);
+    // char* manifestPath = appendToStr(projname, "/.Manifest");
+    // int manifestFileClient = open(manifestPath, O_RDWR | O_CREAT, 00644);
     // int numBytesToWrite = strlen(filedata);
     // int numBytesWritten = 0;
     // int totalNumBytesWritten = 0;
@@ -190,11 +180,8 @@ void create(char* projname, int serverSockFd){
     //     totalNumBytesWritten+=numBytesWritten;
     // }
     // close(manifestFileClient);
-
-    // // free memory:
     // free(filedata);
     // free(manifestPath);
-    //END CLIENTSIDE 2
 }
 
 void destroy(char* projname){
