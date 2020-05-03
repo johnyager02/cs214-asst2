@@ -1,5 +1,7 @@
-all:	main.c recursiveD.o stringFunc.o manifestFunc.o WTF.o sendAndReceive.o
-	gcc -g main.c -o main recursiveD.o stringFunc.o manifestFunc.o WTF.o sendAndReceive.o -lssl -lcrypto
+all:	main.c recursiveD.o stringFunc.o manifestFunc.o WTF.o sendAndReceive.o ./client/clientSocket.c ./server/serverSocket.c
+	gcc -g main.c -o main recursiveD.o stringFunc.o manifestFunc.o WTF.o sendAndReceive.o -lssl -lcrypto;
+	gcc -g ./client/clientSocket.c -o ./client/WTF WTF.o recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto
+	gcc -g ./server/serverSocket.c -o ./server/WTFserver recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto
 
 recursiveD.o:	recursiveD.c stringFunc.o manifestFunc.o
 	gcc -c recursiveD.c
@@ -16,17 +18,11 @@ WTF.o:	WTF.c manifestFunc.o stringFunc.o recursiveD.o sendAndReceive.o
 sendAndReceive.o:	sendAndReceive.c manifestFunc.o stringFunc.o
 	gcc -c sendAndReceive.c
 
-WTF:	./client/clientSocket.c WTF.o recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o
-	gcc -g ./client/clientSocket.c -o ./client/WTF WTF.o recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto
-
-WTFserver: ./server/serverSocket.c recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o
-	gcc -g ./server/serverSocket.c -o ./server/WTFserver recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto
-
 clean:
-	rm main; rm recursiveD.o; rm stringFunc.o; rm manifestFunc.o; rm WTF.o; rm sendAndReceive.o
+	rm main; rm recursiveD.o; rm stringFunc.o; rm manifestFunc.o; rm WTF.o; rm sendAndReceive.o; rm ./client/WTF; rm ./server/WTFserver
 
 cleanManifest:	main
 	rm ./proj0/.Manifest
 
-cleanClientServer:	./client/WTF ./server/WTFserver
-	rm ./client/WTF;	rm ./server/WTFserver
+cleanProj0: ./server/proj0/.Manifest ./server/proj0
+	rm ./server/proj0/.Manifest; rmdir ./server/proj0
