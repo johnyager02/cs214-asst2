@@ -1,7 +1,7 @@
 #ifndef manifestFunc
 #define manifestFunc
 
-char* getHash(char*);
+unsigned char* getHash(char*);
 unsigned char* mallocUChar(int);
 void printHash(unsigned char*, char*);
 unsigned char* mallocUChar(int);
@@ -15,8 +15,13 @@ char* hashToStr(unsigned char*);
 void modifyManifest(char*, int, char*, char*);
 char* numToStr(int);
 char* getFilePathStrLine(char*);
-void writeAfterChar(char*, int, char*, char, int);
+//void writeAfterChar(char*, int, char*, char, int);
 void removeLine(char*, int);
 char* getFileContents(char*);
+char* getProjVersion(char*);
+char* getLineFile(char*, int);
+void setLineFile(char*, int, char*);
+char* nthToken(char*, int, char);
+int getNumLines(char*);
 
 #endif

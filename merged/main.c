@@ -7,31 +7,42 @@
 #include"recursiveD.h"
 #include"manifestFunc.h"
 #include"WTF.h"
+#include"sendAndReceive.h"
 
 int main(int argc, char** argv){
     
 
+    //Test recursivePrintDir(filpath); ->Works!
+    //recursivePrintDir("./"); 
+    
+    //Test printHashR(filepath); ->Works!
+    //printHashR("proj0/");
 
-    //recursivePrintDir("./");
-    //printHashR("./");
+    //Test initializeManifest(project)
+    //initializeManifest("proj0"); //-> Works!
+    //initializeManifest("./proj0"); -> Works!
 
-    //initializeManifest("./proj0");
-    // char* line = getLineToAdd(0, "./proj0/test0");
-    // addToManifest("./proj0/.Manifest", line);
-    // line = getLineToAdd(0, "./proj0/test1");
-    // addToManifest("./proj0/.Manifest", line);
-    // line = getLineToAdd(0, "./proj0/test2");
-    // addToManifest("./proj0/.Manifest", line);
+    //Test addToManifest() -> works for all cases so far!
+    // char* line = getLineToAdd(0, "proj0/test0");
+    // addToManifest("proj0/.Manifest", line);
+    // line = getLineToAdd(0, "proj0/test1");
+    // addToManifest("proj0/.Manifest", line);
+    // line = getLineToAdd(0, "proj0/test2");
+    // addToManifest("proj0/.Manifest", line);
+    // line = getLineToAdd(0, "Makefile");
+    // addToManifest("proj0/.Manifest", line);
 
-    //testing modifyManifest(char* <manifestPath>, int <lineNumToChange>, char* <changeFlag>, char* <replacementStr> ); 
+    //testing modifyManifest(char* <projname>, int <lineNumToChange>, char* <changeFlag>, char* <replacementStr> ); 
     //argument0: path to .Manifest... "./proj0/.Manifest"
     //argument1: line number of change... line 0 is the first line containing only project version, line 1 is first fileLine
     //argument2: flagChange: -v for changing version, -p for changing filepath, -h for changing hash, -c for changing serverCheckChar
     //argument3: actualChange: new Str to write to .Manifest file
-    // modifyManifest("./proj0/.Manifest", 1, "-v", numToStr(1));
-    // modifyManifest("./proj0/.Manifest", 1, "-p", "./proj0/test1");
-    // modifyManifest("./proj0/.Manifest", 1, "-h", "2a4f5a0b4554c6dd26a995dcec265b05b52eba06");
-    // modifyManifest("./proj0/.Manifest", 1, "-c", "y");
+    // char* versionnum =numToStr(12);
+    // modifyManifest("proj0", 1, "-v", versionnum);
+    // free(versionnum);
+    // modifyManifest("proj0", 1, "-p", "Makefile");
+    // modifyManifest("proj0", 1, "-h", "853305468f15be1ef380422489554b7e5694ebca");
+    // modifyManifest("proj0", 1, "-c", "y");
 
     //testing getFileLineManifest(), w/ -hs / -hi; -hs is search by hash -> returns line as a str, -hi is search by hash -> returns lineNum
     // char* currentLine = getFileLineManifest("./proj0/.Manifest", "./proj0/test0", "-hi");
@@ -111,5 +122,37 @@ int main(int argc, char** argv){
 
     //test getFileContents(char* filepath)
     //getFileContents("proj0/test1");
+
+    //test sendAndReceive functions:
+    // readInput("ss8:project18:thisfile20:thfufjdkslfjiweoiwfjjdskfl",20);
+    // send(1, "thisProject", "proj0/test1");
+    // fetch(31, "newProject", ".Manifest");
+
+    //Test getProjVersion(projname)
+    //printf("[Main]-Project version is: \"%s\"\n", getProjVersion("proj0"));
+
+    //Test setProjVersion(projname) ->works!
+    //setProjVersion("proj0", "12\n");
+
+    //Test getLineFile()
+    // printf("[Main] line at index %d is: \"%s\"\n", 0, getLineFile("proj0/.Manifest", 0));
+    // printf("[Main] line at index %d is: \"%s\"\n", 1, getLineFile("proj0/.Manifest", 1));
+    // printf("[Main] line at index %d is: \"%s\"\n", 2, getLineFile("proj0/.Manifest", 2));
+    // printf("[Main] line at index %d is: \"%s\"\n", 3, getLineFile("proj0/.Manifest", 3));
+    // printf("[Main] line at index %d is: \"%s\"\n", 4, getLineFile("proj0/.Manifest", 4));
+
+    //Test nthToken();
+    // printf("[Main] %dth token is: \"%s\"\n", 0, nthToken("11 Makefile 8533054 n\n", 0, ' '));
+    // printf("[Main] %dth token is: \"%s\"\n", 1, nthToken("11 Makefile 8533054 n\n", 1, ' '));
+    // printf("[Main] %dth token is: \"%s\"\n", 2, nthToken("11 Makefile 8533054 n\n", 2, ' '));
+    // printf("[Main] %dth token is: \"%s\"\n", 3, nthToken("11 Makefile 8533054 n\n", 3, ' '));
+    // printf("[Main] %dth token is: \"%s\"\n", 4, nthToken("11 Makefile 8533054 n\n", 4, ' '));
+
+    //Test getNumLines()
+    //printf("[Main] Number of lines in file: \"%s\" is %d\n", "proj0/.Manifest", getNumLines("proj0/.Manifest"));
+    //printf("[Main] Number of lines in file: \"%s\" is %d\n", "proj0/.Manifest", getNumLines("proj0/.Manifest"));
+
+    //Test create()
+    //create("proj0", 1234);
     return 0;
 }

@@ -14,6 +14,11 @@ char* generateNewDirPath(char* oldPath, char* dirName){
     return newDirPath;
 }
 
+char* generateNewFilePath(char* oldPath, char* fileName){
+    char* newDirPath = prependToStr(fileName, oldPath);
+    return newDirPath;
+}
+
 void recursivePrintDir(char* filepath){
     DIR* currentDirPtr = opendir(filepath);
     if(currentDirPtr == NULL){
@@ -53,17 +58,19 @@ void printHashR(char* filepath){
     currentPtr = readdir(currentDirPtr);
     while(currentPtr!=NULL){
         if(currentPtr->d_type == DT_REG){
-            printf("Found File: %s\n", currentPtr->d_name);
-            unsigned char* hash = getHash(currentPtr->d_name);
-            printHash(hash, currentPtr->d_name);
+            char* fileName = currentPtr->d_name;
+            //printf("Found File: %s\n", currentPtr->d_name);
+            char* newFilePath = generateNewFilePath(filepath, fileName);
+            unsigned char* hash = getHash(newFilePath);
+            printHash(hash, newFilePath);
             free(hash);
         }
         else if(currentPtr->d_type == DT_DIR){
             char* dirName = currentPtr->d_name;
-            printf("Found DIR: %s\n", dirName);
+            //printf("Found DIR: %s\n", dirName);
             char* newDirPath = generateNewDirPath(filepath, dirName);
-            printf("Recursing into DIR: %s with new path: %s\n", dirName, newDirPath);
-            recursivePrintDir(newDirPath);
+            //printf("Recursing into DIR: %s with new path: %s\n", dirName, newDirPath);
+            printHashR(newDirPath);
             free(newDirPath);
         }
         currentPtr = readdir(currentDirPtr);
