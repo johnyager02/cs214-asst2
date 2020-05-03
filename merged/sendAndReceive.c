@@ -4,6 +4,43 @@
 #include"manifestFunc.h"
 #include<string.h>
 
+char** getOutputArrSent(char status, char commandType, char* projectName, char* fileName, char* data){
+    
+    char* statusStr = (char*) mallocStr(2);
+    memset(statusStr, status, 1*sizeof(char));
+    memset(statusStr + 1, '\0', 1*sizeof(char));
+
+    char* commandTypeStr = (char*) mallocStr(2);
+    memset(commandTypeStr, commandType, 1*sizeof(char));
+    memset(commandTypeStr + 1, '\0', 1*sizeof(char));
+
+    char** output = (char**) malloc(5*sizeof(*output));
+    output[0] = statusStr;
+    output[1] = commandTypeStr;
+    output[2] = projectName;
+    output[3] = fileName;
+    output[4] = data;
+    return output;
+}
+
+char** getOutputArrFetched(char status, char commandType, char* projectName, char* fileName){
+    
+    char* statusStr = (char*) mallocStr(2);
+    memset(statusStr, status, 1*sizeof(char));
+    memset(statusStr + 1, '\0', 1*sizeof(char));
+
+    char* commandTypeStr = (char*) mallocStr(2);
+    memset(commandTypeStr, commandType, 1*sizeof(char));
+    memset(commandTypeStr + 1, '\0', 1*sizeof(char));
+
+    char** output = (char**) malloc(4*sizeof(*output));
+    output[0] = statusStr;
+    output[1] = commandTypeStr;
+    output[2] = projectName;
+    output[3] = fileName;
+    return output;
+}
+
 char** readInput(char* buff, int fd){
     char success = buff[0];
     if(success == 'f'){
@@ -58,17 +95,17 @@ char** readInput(char* buff, int fd){
         printf("[readInput] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
 
         //handleSend
-        return getOutputArrSent(success, commandType, projectName, fileName, data);
+        return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
     }
     else if(commandType == 'f'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleFetch
-        return getOutputArrFetched(success, commandType, projectName, fileName);
+        return  (char**) getOutputArrFetched(success, commandType, projectName, fileName);
     }
     else if(commandType == 'c'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleSendCommand
-        return getOutputArrFetched(success, commandType, projectName, fileName);
+        return (char**) getOutputArrFetched(success, commandType, projectName, fileName);
     }
     else{
         printf("Error: command type not recognized");
@@ -76,45 +113,11 @@ char** readInput(char* buff, int fd){
     }
 }
 
-char** getOutputArrSent(char status, char commandType, char* projectName, char* fileName, char* data){
-    
-    char* statusStr = (char*) mallocStr(2);
-    memset(statusStr, status, 1*sizof(char));
-    memset(statusStr + 1, '\0', 1*sizeof(char));
-
-    char* commandTypeStr = (char*) mallocStr(2);
-    memset(commandTypeStr, commandType, 1*sizof(char));
-    memset(commandTypeStr + 1, '\0', 1*sizeof(char));
-
-    char** output = (char*) malloc(5*sizeof(*output));
-    output[0] = statusStr;
-    output[1] = commandTypeStr;
-    output[2] = projectName;
-    output[3] = fileName;
-    output[4] = data;
-    return output;
-}
-
-char** getOutputArrFetched(char status, char commandType, char* projectName, char* fileName){
-    
-    char* statusStr = (char*) mallocStr(2);
-    memset(statusStr, status, 1*sizof(char));
-    memset(statusStr + 1, '\0', 1*sizeof(char));
-
-    char* commandTypeStr = (char*) mallocStr(2);
-    memset(commandTypeStr, commandType, 1*sizof(char));
-    memset(commandTypeStr + 1, '\0', 1*sizeof(char));
-
-    char** output = (char*) malloc(4*sizeof(*output));
-    output[0] = statusStr;
-    output[1] = commandTypeStr;
-    output[2] = projectName;
-    output[3] = fileName;
-    return output;
-}
 
 
-void send(int sockfd, char* projectName, char* fileName){
+
+
+void sendData(int sockfd, char* projectName, char* fileName){
     int projectLengthInt = strlen(projectName);
     char* projectLengthString = numToStr(projectLengthInt);
     int fileLengthInt = strlen(fileName);
@@ -131,7 +134,7 @@ void send(int sockfd, char* projectName, char* fileName){
     //write(sockfd, buff, sizeof(buff));
 }
 
-void fetch(int sockfd, char* projectName, char* fileName){
+void fetchData(int sockfd, char* projectName, char* fileName){
     int projectLengthInt = strlen(projectName);
     char* projectLengthString = numToStr(projectLengthInt);
     int fileLengthInt = strlen(fileName);

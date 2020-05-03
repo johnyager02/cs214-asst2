@@ -10,6 +10,11 @@ int makeSocket();
 #include <stdlib.h> 
 #include <string.h> 
 #include <sys/socket.h> 
+#include "../stringFunc.h"
+#include "../recursiveD.h"
+#include "../sendAndReceive.h"
+#include "../manifestFunc.h"
+#include "../WTF.h"
 #define MAX 80 
 #define PORT 8080 
 #define SA struct sockaddr 
