@@ -11,9 +11,9 @@
 #include "../stringFunc.h"
 #include "../recursiveD.h"
 #include "../sendAndReceive.h"
+#include<signal.h>
 #include "../manifestFunc.h"
 #define BUFFSIZE 10 
-#define PORT 8080 
 #define SA struct sockaddr 
 
 int existsFile(char* filename){ 
@@ -170,6 +170,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
 }
 
 char** readInputFromClient(char* buff, int fd){
+    printf("%s\n", buff);
     char success = buff[0];
     if(success == 'f'){
         printf("[readInput] Error! command could not be executed\n");
@@ -244,8 +245,8 @@ char** readInputFromClient(char* buff, int fd){
 }
 
 // Function designed for chat between client and server. 
-void func(int sockfd) 
-{ 
+void func(int sockfd){ 
+
     char* buff = (char*) mallocStr(BUFFSIZE+1);
     bzero(buff, (BUFFSIZE+1)*sizeof(char)); 
     int n; 
@@ -301,8 +302,9 @@ void func(int sockfd)
 } 
 
 // Driver function 
-int main() 
+int main(int argc, char** argv) 
 { 
+    int PORT = atoi(argv[1]);
     int sockfd, connfd, len; 
     struct sockaddr_in servaddr, cli; 
   
@@ -326,6 +328,7 @@ int main()
   
     // Binding newly created socket to given IP and verification 
     if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) { 
+        perror("bind");
         printf("socket bind failed...\n"); 
         exit(0); 
     } 
@@ -352,7 +355,7 @@ int main()
   
     // Function for chatting between client and server 
     func(connfd); 
-  
+    
     // After chatting close the socket 
     close(sockfd); 
 } 
