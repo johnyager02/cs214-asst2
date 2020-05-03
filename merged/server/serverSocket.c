@@ -12,7 +12,7 @@
 #include "../recursiveD.h"
 #include "../sendAndReceive.h"
 #include "../manifestFunc.h"
-#define MAX 80 
+#define BUFFSIZE 10 
 #define PORT 8080 
 #define SA struct sockaddr 
 
@@ -38,17 +38,6 @@ int existsDir(char* dirpath){
     }
 }
 
-
-  
-// void handleClientSent(char** output){
-//     char* status = output[0];
-//     char* commandType = output[1];
-//     char* projName = output[2];
-//     char* fileName = output[3];
-//     char* data = output[4];
-
-
-// }
 
 void handleClientFetched(char** output, int clientSockFd){
     char* status = output[0];
@@ -243,25 +232,45 @@ char** readInputFromClient(char* buff, int fd){
 // Function designed for chat between client and server. 
 void func(int sockfd) 
 { 
-    char buff[MAX]; 
+    char* buff = (char*) mallocStr(BUFFSIZE+1);
+    bzero(buff, (BUFFSIZE+1)*sizeof(char)); 
     int n; 
+    int numBytesRead = 0;
+    int totalReadInBytes = 0;
+    int currentBufferSize = BUFFSIZE;
     // infinite loop for chat 
     for (;;) { 
-        bzero(buff, MAX); 
-  
-        // read the message from client and copy it in buffer 
-        read(sockfd, buff, sizeof(buff)); 
+        bzero(buff, currentBufferSize); 
+        // read the message from client and copy it in buffer
+        while((numBytesRead = read(sockfd, buff + totalReadInBytes, 5*sizeof(char))) != 0){
+            
+            printf("[func] Current buffer is: \"%s\"\n", buff);
+            totalReadInBytes+=numBytesRead;
+            printf("[func] NumBytesRead is: %d\n", numBytesRead);
+            if(totalReadInBytes==currentBufferSize){//realloc buff
+                printf("[func] Reallocing buffer\n");
+                buff = (char*) reallocStr(buff, 2*currentBufferSize + 1);
+                currentBufferSize = 2*currentBufferSize;
+                printf("[func] Current buffer size is: %d\n", currentBufferSize);
+                memset(buff + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
+            }
+            printf("[func] totalReadInBytes is: %d\n", totalReadInBytes);
+        }
+        if(strlen(buff) != 0){
+            printf("[func] final buffer after read is: \"%s\"\n", buff);  
+        }
+        
         // print buffer which contains the client contents 
-        printf("From client: %s\t To client : ", buff); 
-        readInputFromClient(buff, sockfd);
-        bzero(buff, MAX); 
+        //printf("From client: %s\t To client : ", buff); 
+        //readInputFromClient(buff, sockfd);
+        bzero(buff, currentBufferSize); 
         n = 0; 
         // copy server message in the buffer 
-        while ((buff[n++] = getchar()) != '\n') 
-            ; 
+        // while ((buff[n++] = getchar()) != '\n') 
+        //     ; 
   
         // and send that buffer to client 
-        write(sockfd, buff, sizeof(buff)); 
+        //write(sockfd, buff, sizeof(buff)); 
   
         // if msg contains "Exit" then server exit and chat ended. 
         if (strncmp("exit", buff, 4) == 0) { 

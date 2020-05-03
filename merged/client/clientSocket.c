@@ -20,22 +20,28 @@ int makeSocket();
 #define SA struct sockaddr 
 void func(int sockfd) 
 { 
-    char buff[MAX]; 
+    char* buff = (char*) mallocStr(1025);
+    memset(buff, '\0',1025*sizeof(char)); 
     int n; 
+    int numBytesRead = 0;
+    int totalReadInBytes = 0;
+    int currentBufferSize = 1024;
     for (;;) { 
-        bzero(buff, sizeof(buff)); 
+        memset(buff, '\0', currentBufferSize*sizeof(char)); 
         printf("Enter the string : \n"); 
         n = 0; 
         while ((buff[n++] = getchar()) != '\n') 
             ; 
-        write(sockfd, buff, sizeof(buff)); 
-        bzero(buff, sizeof(buff)); 
-        read(sockfd, buff, sizeof(buff)); 
-        printf("From Server : %s", buff); 
-        if ((strncmp(buff, "exit", 4)) == 0) { 
-            printf("Client Exit...\n"); 
-            break; 
-        } 
+
+        write(sockfd, buff, 10*sizeof(char));
+        // write(sockfd, buff, 10*sizeof(char)); 
+        // bzero(buff, currentBufferSize); 
+        // read(sockfd, buff, sizeof(buff)); 
+        // printf("From Server : %s", buff); 
+        // if ((strncmp(buff, "exit", 4)) == 0) { 
+        //     printf("Client Exit...\n"); 
+        //     break; 
+        // } 
     } 
 } 
   
@@ -68,8 +74,8 @@ int main()
         printf("connected to the server..\n"); 
   
     // function for chat 
-    func(sockfd); 
-  
+    //func(sockfd); 
+    write(sockfd, "sc5:proj06:create", 17*sizeof(char));
     // close the socket 
     close(sockfd); 
 } 
