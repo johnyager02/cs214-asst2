@@ -12,7 +12,7 @@
 #include "../recursiveD.h"
 #include "../sendAndReceive.h"
 #include "../manifestFunc.h"
-#define MAX 80 
+#define BUFFSIZE 10 
 #define PORT 8080 
 #define SA struct sockaddr 
 
@@ -38,17 +38,6 @@ int existsDir(char* dirpath){
     }
 }
 
-
-  
-// void handleClientSent(char** output){
-//     char* status = output[0];
-//     char* commandType = output[1];
-//     char* projName = output[2];
-//     char* fileName = output[3];
-//     char* data = output[4];
-
-
-// }
 
 void handleClientFetched(char** output, int clientSockFd){
     char* status = output[0];
@@ -117,28 +106,42 @@ void handleClientSentCommand(char** output, int clientSockFd){
         initializeManifest(projName);
         //Send new Manifest to client
         char* manifestPath = appendToStr(projName, "/.Manifest");
-        sendData(clientSockFd, projName, getFileContents(manifestPath));
+        char* filecontents = getFileContents(manifestPath);
+        printf("[handleClientSentCommand] filecontents is: \"%s\"\n", filecontents);
+        //sendData(clientSockFd, projName, filecontents);
         //free memory:
-        int i;
-        for(i=0;i<5;i++){
-            free(output[i]);
-        }
-        free(output);
-        free(manifestPath);
+        // int i;
+        // for(i=0;i<5;i++){
+        //     free(output[i]);
+        // }
+        // free(output);
+        // free(manifestPath);
     }
     else if(compareString(commandName, "destroy") == 0){
         /*The destroy command will fail if the project name doesn’t exist on the server
          On receiving a destroy command the server should lock the repository, expire any pending commits,
         delete all files and subdirectories under the project and send back a success message.*/
 
+        printf("[handleClientSentCommand] Client sent command to destroy project: \"%s\"\n", projName);
         //lock repository
 
         //expire pending commits
 
         //delete all files/subdirs under project
-
-        //send back success
-        printf("[handleClientSentCommand] Client sent command to destroy project: \"%s\"\n", projName);
+        int projLen = strlen(projName);
+        if(projName[projLen - 1] != '/'){
+            char* oldStr = projName;
+            projName = appendToStr(projName, "/");
+            free(oldStr);
+        }
+        recursiveDelete(projName);
+        if(isEmptyDir(projName)){
+            printf("[handleClientSentCommand] Deleted proj: \"%s\"\n", projName);
+            //send back success
+            
+        } else printf("[handleClientSentCommand] Failed to delete proj: \"%s\"\n", projName);
+        
+        
     }
     else if(compareString(commandName, "currentversion") == 0){
         /*The currentversion command will request from the server the current state of a project from the server. This
@@ -243,25 +246,51 @@ char** readInputFromClient(char* buff, int fd){
 // Function designed for chat between client and server. 
 void func(int sockfd) 
 { 
-    char buff[MAX]; 
+    char* buff = (char*) mallocStr(BUFFSIZE+1);
+    bzero(buff, (BUFFSIZE+1)*sizeof(char)); 
     int n; 
+    int numBytesRead = 0;
+    int totalReadInBytes = 0;
+    int currentBufferSize = BUFFSIZE;
     // infinite loop for chat 
     for (;;) { 
-        bzero(buff, MAX); 
-  
-        // read the message from client and copy it in buffer 
-        read(sockfd, buff, sizeof(buff)); 
+        bzero(buff, currentBufferSize + 1); 
+        // read the message from client and copy it in buffer
+        //printf("[func] Reading message now: \n");
+        while((numBytesRead = read(sockfd, buff + totalReadInBytes, 5*sizeof(char))) != 0){
+            
+            printf("[func] Current buffer is: \"%s\"\n", buff);
+            totalReadInBytes+=numBytesRead;
+            printf("[func] NumBytesRead is: %d\n", numBytesRead);
+            if(totalReadInBytes==currentBufferSize){//realloc buff
+                printf("[func] Reallocing buffer\n");
+                buff = (char*) reallocStr(buff, 2*currentBufferSize + 1);
+                currentBufferSize = 2*currentBufferSize;
+                printf("[func] Current buffer size is: %d\n", currentBufferSize);
+                memset(buff + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
+            }
+            printf("[func] totalReadInBytes is: %d\n", totalReadInBytes);
+        }
+        if(strlen(buff) != 0){ // done reading
+            printf("[func] final buffer after read is: \"%s\"\n", buff);
+            readInputFromClient(buff, sockfd);
+        }
         // print buffer which contains the client contents 
-        printf("From client: %s\t To client : ", buff); 
-        readInputFromClient(buff, sockfd);
-        bzero(buff, MAX); 
+        //printf("From client: %s\t To client : ", buff); 
+        //printf("[func] Done reading input\n");
+        bzero(buff, currentBufferSize); 
+        totalReadInBytes = 0;  
+        numBytesRead = 0;
+        currentBufferSize = BUFFSIZE;
+        buff = (char*) reallocStr( buff, currentBufferSize + 1);
+        //printf("[func] Current buffer size is: %d\n", currentBufferSize);
         n = 0; 
         // copy server message in the buffer 
-        while ((buff[n++] = getchar()) != '\n') 
-            ; 
+        // while ((buff[n++] = getchar()) != '\n') 
+        //     ; 
   
         // and send that buffer to client 
-        write(sockfd, buff, sizeof(buff)); 
+        //write(sockfd, buff, sizeof(buff)); 
   
         // if msg contains "Exit" then server exit and chat ended. 
         if (strncmp("exit", buff, 4) == 0) { 
