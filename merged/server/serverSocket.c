@@ -26,12 +26,12 @@ void handleClientFetched(char** output, int clientSockFd){
     if(existsDir(projName) != 1){
         //Failed to find requested project
         //send failed
-        sendData(clientSockFd, projName, "fs");
+        sendData(clientSockFd, projName, "");
     }
     if(existsFile(fileName) != 1){
         //Failed to find requested file
         //send failed
-        sendData(clientSockFd, projName, "fs");
+        sendData(clientSockFd, projName, "");
     }
 
     //Client fetched and file/project both exist -> send file that is requested
@@ -143,7 +143,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
         //send history
         printf("[handleClientSentCommand] Client sent command to send history of project: \"%s\"\n", projName);
     }
-    else if(compareString(commandName, "rollback")){
+    else if(compareString(commandName, "rollback") == 0){
         /*The rollback command will fail if the project name doesn’t exist on the server or the version number given is invalid. 
          The server will revert its current version of the project back to the version number requested by
         the client by deleting all more recent versions saved on the server side.*/
@@ -231,11 +231,16 @@ char** readInputFromClient(int sockfd){
     else if(commandType == 'f'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleFetch
-        //return  (char**) getOutputArrFetched(success, commandType, projectName, fileName);
+        char** output = (char**) getOutputArrFetched(success, commandType, projectName, fileName);
+        handleClientFetched( output, sockfd);
+        return output;
     }
     else if(commandType == 'c'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleSendCommand
+        if(compareString(fileName, "stop") == 0 ){
+            return NULL;
+        }
         handleClientSentCommand( (char**) getOutputArrFetched(success, commandType, projectName, fileName), sockfd);
         return NULL;
     }
@@ -243,7 +248,7 @@ char** readInputFromClient(int sockfd){
         printf("Error: command type not recognized");
         return NULL;
     }
-    return NULL;
+    //return NULL;
 }
 
 void testfunc(int sockfd){

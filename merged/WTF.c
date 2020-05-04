@@ -194,44 +194,67 @@ project, creating any subdirectories under the project and putting all files in 
    
     char* manifestPath = appendToStr(projname, "/.Manifest");
     
-    
-    //fetchData(sockfd, projname, manifestPath);
-    //receive manifest into char** output output[0] == status, output[1] == commandType, output[2] == projName, output[3] = fileName, output[4] = filedata; 
-    //char* filedata = output[4];
-    
+    //fetch server's .Manifest for the given project
+    fetchData(sockfd, projname, manifestPath);
+    char** output =  readInputFromServer(sockfd);
+
+    if(output == NULL){
+        printf("[checkout] Failed!\n");
+        //close(sockfd);
+        return;
+    }
+    if(output[0][0] == 'f'){
+        printf("[checkout] Failed!\n");
+        //close(sockfd);
+        return;
+    }
+    char* serverFileData = output[4];
+    printf("[checkout] serverManifest is: \"%s\"\n", serverFileData);
+
     //checks if project exists -> if not make
     if(existsDir(projname) != 1){
         int mkProj = mkdir(projname, 0777);
     }
+
     //create manifest
-    initializeManifest(projname);
+    createNewFile(manifestPath);
     //setFileContents to manifest received from server;
-    
+    overwriteOrCreateFile(manifestPath, serverFileData);
+
     //TESTING DATA: -> Comment out after getting server receive to work!
-    char* testServerManifestData = getFileContents("server/proj1/.Manifest");
-    char* testServerFile1 = getFileContents("server/proj1/test0");
-    char* testServerFile2 = getFileContents("server/proj1/test1");
-    char* testServerFile3 = getFileContents("server/proj1/test2");
-    
-    overwriteOrCreateFile(manifestPath, testServerManifestData);
+    // char* testServerManifestData = getFileContents("server/proj1/.Manifest");
+    // char* testServerFile1 = getFileContents("server/proj1/test0");
+    // char* testServerFile2 = getFileContents("server/proj1/test1");
+    // char* testServerFile3 = getFileContents("server/proj1/test2");
+    //overwriteOrCreateFile(manifestPath, testServerManifestData);
 
     //write all files to their locations
     int numLinesManifest = getNumLines(manifestPath);
     
     int i;
-    for(i = 1; i<numLinesManifest;i++){
+    for(i = 1; i<numLinesManifest;i++){ // for each file in manifest fetch and place into correct place
         char* fetchLine = getLineFile(manifestPath, i);
-        char* fetchFileName = nthToken(fetchLine, 1, ' ');
+        char* fetchFileName = nthToken(fetchLine, 1, ' '); //get filename from manifest
         printf("[checkout] Filename of line %d to fetch is: \"%s\"\n", i, fetchFileName); 
         //fetch file from server
-        //fetchData(sockfd, projname, fetchFileName);
+        fetchData(sockfd, projname, fetchFileName);
+        //receive file from server
+        output = readInputFromServer(sockfd);
+        serverFileData = output[4];
+        //create manifest
+        createNewFile(fetchFileName);
+        //setFileContents to manifest received from server;
+        overwriteOrCreateFile(fetchFileName, serverFileData);
     }
-    createNewFile("proj1/test0");
-    createNewFile("proj1/test1");
-    createNewFile("proj1/test2");
-    overwriteOrCreateFile("proj1/test0", testServerFile1);
-    overwriteOrCreateFile("proj1/test1", testServerFile2);
-    overwriteOrCreateFile("proj1/test2", testServerFile3);
+    //sendStop fetching
+    //sendCommand(sockfd, projname, "stop");
+    printf("[checkout] Checkout for project: \"%s\" succeeded!\n", projname);
+    // createNewFile("proj1/test0");
+    // createNewFile("proj1/test1");
+    // createNewFile("proj1/test2");
+    // overwriteOrCreateFile("proj1/test0", testServerFile1);
+    // overwriteOrCreateFile("proj1/test1", testServerFile2);
+    // overwriteOrCreateFile("proj1/test2", testServerFile3);
 }
 
 void update(char* projname, int sockfd){ 
