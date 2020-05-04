@@ -26,12 +26,12 @@ void handleClientFetched(char** output, int clientSockFd){
     if(existsDir(projName) != 1){
         //Failed to find requested project
         //send failed
-        sendData(clientSockFd, projName, "");
+        sendData(clientSockFd, projName, "fs");
     }
     if(existsFile(fileName) != 1){
         //Failed to find requested file
         //send failed
-        sendData(clientSockFd, projName, "");
+        sendData(clientSockFd, projName, "fs");
     }
 
     //Client fetched and file/project both exist -> send file that is requested
@@ -75,7 +75,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
         // Server: check if project exists:
         if(existsDir(projName) == 1){
             //send failure
-            sendData(clientSockFd, projName, "");
+            sendData(clientSockFd, projName, "fs");
         }
 
         //Create proj folder w/ name
@@ -229,7 +229,8 @@ char** readInputFromClient(int sockfd){
     else if(commandType == 'c'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleSendCommand
-        return (char**) getOutputArrFetched(success, commandType, projectName, fileName);
+        handleClientSentCommand( (char**) getOutputArrFetched(success, commandType, projectName, fileName), sockfd);
+        return NULL;
     }
     else{
         printf("Error: command type not recognized");

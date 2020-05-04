@@ -39,6 +39,10 @@ void handleServerFetched(char** output, int clientSockFd){
 
 }
 
+void handleServerSent(char** output, int clientSockFd){
+
+}
+
 char** readInputFromServer(int sockfd){
     //Want to read <s/f><s/f/c><projLen>:<projName><fileLen>:<fileName> or for send:<s/f><s/f/c><projLen>:<projName><fileLen>:<fileName><dataLen>:<data>
     //Read successflag and commandType
@@ -110,7 +114,7 @@ char** readInputFromServer(int sockfd){
         printf("[readInputProtocol] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
 
         //handleSend
-        //return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
+        return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
     }
     else if(commandType == 'f'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
@@ -360,59 +364,28 @@ void create(char* projname, int sockfd){
 
     //START CLIENTSIDE: receiving message
     //Client: Receives sendServerToClientCreate string and then parses...-> 
-    char* buff = (char*) mallocStr(BUFFSIZE+1);
-    bzero(buff, (BUFFSIZE+1)*sizeof(char)); 
-    int n; 
-    int numBytesRead = 0;
-    int totalReadInBytes = 0;
-    int currentBufferSize = BUFFSIZE;
-    char** output;
-    while((numBytesRead = recv(sockfd, buff + totalReadInBytes, 5*sizeof(char), MSG_DONTWAIT)) != 0){
-            if(numBytesRead>0){
-                printf("[func] Current buffer is: \"%s\"\n", buff);
-            totalReadInBytes+=numBytesRead;
-            printf("[func] NumBytesRead is: %d\n", numBytesRead);
-            if(totalReadInBytes==currentBufferSize){//realloc buff
-                printf("[func] Reallocing buffer\n");
-                buff = (char*) reallocStr(buff, 2*currentBufferSize + 1);
-                currentBufferSize = 2*currentBufferSize;
-                printf("[func] Current buffer size is: %d\n", currentBufferSize);
-                memset(buff + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
-            }
-            printf("[func] totalReadInBytes is: %d\n", totalReadInBytes);
-            }
-        }
-        if(strlen(buff) != 0){ // done reading
-        printf("[func] final buffer after read is: \"%s\"\n", buff);
-        output = readInputFromServer(sockfd);
-    }
+    char** output = readInputFromServer(sockfd);
     if(output == NULL){
         printf("[create] Failed!\n");
-        close(sockfd);
+        //close(sockfd);
         return;
     }
     if(output[0][0] == 'f'){
         printf("[create] Failed!\n");
-        close(sockfd);
+        //close(sockfd);
         return;
     }
-    char* filedata = output[4];
+
+    char* serverFileData = output[4];
+    printf("[create] serverManifest is: \"%s\"\n", serverFileData);
     int makeDir = mkdir(projname, 0777);
     char* manifestPath = appendToStr(projname, "/.Manifest");
-    int manifestFileClient = open(manifestPath, O_RDWR | O_CREAT, 00644);
-    int numBytesToWrite = strlen(filedata);
-    int numBytesWritten = 0;
-    int totalNumBytesWritten = 0;
-    while(numBytesToWrite > 0){
-        numBytesWritten = write(manifestFileClient, filedata + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
-        numBytesToWrite-=numBytesWritten;
-        totalNumBytesWritten+=numBytesWritten;
-    }
-    close(manifestFileClient);
-    close(sockfd);
-    if(totalNumBytesWritten == strlen(filedata)){
-        printf("[create] Success!\n");
-    }
+    createNewFile(manifestPath);
+    overwriteOrCreateFile(manifestPath, serverFileData);
+    //close(sockfd);
+    //if(totalNumBytesWritten == strlen(filedata)){
+    printf("[create] Successfully created project: \"%s\"!\n", projname);
+    //}
     // free(filedata);
     // free(manifestPath);
 }
