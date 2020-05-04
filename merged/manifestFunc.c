@@ -292,7 +292,7 @@ void initializeManifest(char* projectpath){ // project path should be "./proj0"
     
 }
 
-void addToManifest(char* manifestPath, char* line){ //path should be "./<currentProjName>/.Manifest"
+void addToManifest(char* manifestPath, char* line){ //path should be "./<currentProjName>/.Manifest" !!!!!MAKE SURE TO APPEND \n TO THE INPUTLINE"
     int file = open(manifestPath, O_WRONLY | O_APPEND, 00644);
     if(file<0){
         printf("Fatal Error: %s in regard to path %s\n", strerror(errno), manifestPath);
@@ -300,9 +300,11 @@ void addToManifest(char* manifestPath, char* line){ //path should be "./<current
     }
     int numBytesToWrite = strlen(line);
     int numBytesWritten = 0;
+    int totalNumBytesWritten = 0;
     while(numBytesToWrite > 0){
-        numBytesWritten = write(file, line, strlen(line)*sizeof(char));
+        numBytesWritten = write(file, line + totalNumBytesWritten, (numBytesToWrite-totalNumBytesWritten)*sizeof(char));
         numBytesToWrite-=numBytesWritten;
+        totalNumBytesWritten+=numBytesWritten;
     }
 }
 
@@ -766,4 +768,11 @@ int getNumLines(char* filepath){
     }
 
     return linesRead;
+}
+
+int existsFileManifest(char* manifestPath, char* filepath){
+    if(getFileLineManifest(manifestPath, filepath, "-ps") == NULL){
+        return 0;
+    }
+    return 1;
 }

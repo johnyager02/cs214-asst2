@@ -188,7 +188,7 @@ int main(int argc, char** argv){
 
     
 
-    //Test void checkout:
+    //Test void checkout() -> works clientside!!
     //Resetting test files: create files
     // createNewFile("server/proj1/test0");
     // createNewFile("server/proj1/test1");
@@ -196,10 +196,14 @@ int main(int argc, char** argv){
     // overwriteOrCreateFile("server/proj1/test0", "test0succeeded");
     // overwriteOrCreateFile("server/proj1/test1", "test1succeeded");
     // overwriteOrCreateFile("server/proj1/test2", "test2succeeded");
-    recursiveDelete("proj1/");
-    rmdir("proj1");
+    // recursiveDelete("proj1/");
+    // rmdir("proj1");
     //checkout("proj1", 11);
     
+    //Test void update() -> works for full success case and A, need to test M and C!
+    //Resetting test files:
+    //remove("proj1/.Update");
+    //update("proj1", 11);
 
     return 0;
 }

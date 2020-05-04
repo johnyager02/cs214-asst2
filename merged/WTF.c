@@ -218,8 +218,79 @@ project, creating any subdirectories under the project and putting all files in 
     overwriteOrCreateFile("proj1/test2", testServerFile3);
 }
 
-void update(char* projname, int sockfd){
+void update(char* projname, int sockfd){ 
+    //Fetch server's manifest
+    char* manifestPath = appendToStr(projname, "/.Manifest");
+    
+    
+    //fetchData(sockfd, projname, manifestPath);
+    //receive manifest into char** output output[0] == status, output[1] == commandType, output[2] == projName, output[3] = fileName, output[4] = filedata; 
+    //char* filedata = output[4];
 
+    //TESTING:
+    char* serverManifestData = getFileContents("server/proj1/.Manifest");
+
+    //Initiate temp server manifest
+    char* tempServerManifest = appendToStr(projname, "/.serverManifest");
+    createNewFile(tempServerManifest);
+    overwriteOrCreateFile(tempServerManifest, serverManifestData);
+
+    //Create empty .Update file
+    char* updatePath = appendToStr(projname, "/.Update");
+    createNewFile(updatePath);
+    open(updatePath, O_RDONLY|O_TRUNC, 00644);
+    
+    //Compare .Manifest versions
+    if(compareString(getLineFile(tempServerManifest, 0), getLineFile(manifestPath, 0)) == 0){//Manifests are same version //Full success
+        char* conflictPath = appendToStr(projname, "/.Conflict");
+        if(existsFile(conflictPath) == 1){
+            remove(conflictPath);
+        }
+        printf("Up To Date");
+        remove(tempServerManifest);
+        return;
+    }
+    
+    //Manifest versions different -> search for difference 
+    //First search with serverManifest
+    int numLinesServerManifest = getNumLines(tempServerManifest);
+    int i;
+    for(i = 1;i<numLinesServerManifest;i++){ //skip proj version
+        char* currentServerLine = getLineFile(tempServerManifest, i);
+        char* currentServerFileName = nthToken(currentServerLine, 1, ' ');
+        char* currentServerFileHash = nthToken(currentServerLine, 2, ' ');
+        printf("[update] currentServerFileName is: \"%s\"\n", currentServerFileName);
+        printf("[update] currentServerHashName is: \"%s\"\n", currentServerFileHash);
+        if( (existsFileManifest(manifestPath, currentServerFileName))  == 1){ //server's manifest exists on client's manifest -> Check M or C
+            printf("[update] Client manifest has file: \"%s\"\n", currentServerFileName);
+        }
+        else{ //server has files not on client's manifest -> Append A to .Update
+            printf("[update] Server has file: \"%s\" which is not in client's manifest\n", currentServerFileName);
+            //Format "<A> <filename>"
+            char* lineToPrint = mallocStr(1 + 1 + strlen(currentServerFileName) + 1);
+            bzero(lineToPrint, (1 + 1 + strlen(currentServerFileName) + 1)*sizeof(char));
+            sprintf(lineToPrint, "%c %s", 'A', currentServerFileName);
+            printf("%s", lineToPrint);
+            
+            //Format "<A> <filename> <serverHash>" !!!MAKE SURE TO APPEND \n char"
+            char* lineToAppend =  appendToStr(lineToPrint, " ");
+            free(lineToPrint);
+            char* oldStr = lineToAppend;
+            lineToAppend = appendToStr(oldStr, currentServerFileHash);
+            free(oldStr);
+            oldStr = lineToAppend;
+            lineToAppend = appendToStr(oldStr, "\n");
+            free(oldStr);
+
+            addToManifest(updatePath, lineToAppend); //reuse addToManifest to append lineToAppend to .Update
+            free(lineToAppend);
+            remove(tempServerManifest);
+            return;
+        }
+    }
+
+
+    remove(tempServerManifest);
 }
 
 void upgrade(char* projname, int sockfd){
