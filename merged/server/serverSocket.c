@@ -133,6 +133,16 @@ void handleClientSentCommand(char** output, int clientSockFd){
         command does not require that the client has a copy of the project locally. The client should output a list of all
         files under the project name, along with their version number (i.e., number of updates).*/
         printf("[handleClientSentCommand] Client sent command to get currentversion of project: \"%s\"\n", projName);
+        // Server: check if project exists:
+        if(existsDir(projName) == 1){
+            //send failure
+            sendData(clientSockFd, projName, "");
+        }
+        //Send  Manifest to client
+        char* manifestPath = appendToStr(projName, "/.Manifest");
+        char* filecontents = getFileContents(manifestPath);
+        printf("[handleClientSentCommand] filecontents is: \"%s\"\n", filecontents);
+        sendData(clientSockFd, projName, manifestPath);
     }
     else if(compareString(commandName, "history") == 0){
         /*The history command will fail if the project doesn’t exist on the server

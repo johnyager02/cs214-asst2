@@ -215,7 +215,7 @@ project, creating any subdirectories under the project and putting all files in 
     if(existsDir(projname) != 1){
         int mkProj = mkdir(projname, 0777);
     }
-
+    //proj0/sub1/sub2/sub3/text.txt
     //create manifest
     createNewFile(manifestPath);
     //setFileContents to manifest received from server;
@@ -262,12 +262,13 @@ void update(char* projname, int sockfd){
     char* manifestPath = appendToStr(projname, "/.Manifest");
     
     
-    //fetchData(sockfd, projname, manifestPath);
+    fetchData(sockfd, projname, manifestPath);
+    char** output = readInputProtocol(sockfd);
     //receive manifest into char** output output[0] == status, output[1] == commandType, output[2] == projName, output[3] = fileName, output[4] = filedata; 
-    //char* filedata = output[4];
+    char* filedata = output[4];
 
     //TESTING:
-    char* serverManifestData = getFileContents("server/proj1/.Manifest");
+    //char* serverManifestData = getFileContents("server/proj1/.Manifest");
 
     //Initiate temp server manifest
     char* tempServerManifest = appendToStr(projname, "/.serverManifest");
@@ -473,57 +474,42 @@ void removeEntry(char* projname, char* filename){ // Expects projname as format:
 }
 
 void currentversion(char* projname, int sockfd){
-    int projNameLen = strlen(projname);
     char* manifestPath = appendToStr(projname, "/.Manifest");
-    char currentVersion[] = "currentVersion";
-    int commandLen = strlen(currentVersion);
     //Client -> Server: sendCommand:  "<s><c><projNameLen>:<projname><commandLen>:<currentVersion>"
-
-
+    //sendCommand(sockfd, projname, "currentversion");
+    fetchData(sockfd, projname, manifestPath);
+    char** output = readInputFromServer(sockfd);
+    if(output == NULL){
+        printf("[currentversion] Failed!\n");
+        //close(sockfd);
+        return;
+    }
+    if(output[0][0] == 'f'){
+        printf("[currentversion] Failed!\n");
+        //close(sockfd);
+        return;
+    }
     //Server -> Client: sendCommand: "<s><c><projNameLen>:<projname><dataLen>:<filenames:versions>" ... <filenames:versions> is the data internally separated by ':'
     //EX) "<s><c><5>:<proj0><46>:<Makefile:0:proj0/test0:1:proj0/sub0/subtest0:3>" gets sent from server to client
-    char* receivedStr = "Makefile:0:proj0/test0:1:proj0/sub0/subtest0:3:proj0/test1:35"; // replace hardcoded with what server sends client
-    
-    //Parse receivedStr for filenames and their versions to print
-    char* fileToPrint = (char*) mallocStr(strlen(receivedStr));
-    memset(fileToPrint, '\0', strlen(receivedStr)*sizeof(char));
-    char* versionToPrint = (char*) mallocStr(strlen(receivedStr));
-    memset(versionToPrint, '\0', strlen(receivedStr)*sizeof(char));
+    //char* receivedStr = "Makefile:0:proj0/test0:1:proj0/sub0/subtest0:3:proj0/test1:35"; // replace hardcoded with what server sends client
+    char* serverFileData = output[4];
 
-    // EX string to parse: "Makefile:0:proj0/test0:1:proj0/sub0/subtest0:3:proj0/test1:35" -> prints w/ \t after filename and \n after version for visual format
+    //make temp .currentVersionManifest 
+    char* tempServerManifest = appendToStr(projname, "/.currentVersionManifest");
+    createNewFile(tempServerManifest);
+    overwriteOrCreateFile(tempServerManifest, serverFileData);
+
+    int numLinesManifest = getNumLines(tempServerManifest);
     int i;
-    int indexOfCopy = 0;
-    int numDelims = 0;
-    int copyIntoFile = 1;
-    for(i = 0; i<strlen(receivedStr);i++){
-        if(receivedStr[i] == ':'){//reset buffer
-            if(numDelims % 2 == 0){ // even -> file
-                printf("%s\t", fileToPrint);
-                memset(fileToPrint, '\0', strlen(receivedStr)*sizeof(char));
-                copyIntoFile = 0;
-            }
-            else if(numDelims % 2 == 1){// odd -> version
-                printf("%s\n", versionToPrint);
-                memset(versionToPrint, '\0', strlen(receivedStr)*sizeof(char));
-                copyIntoFile = 1;
-            }
-            indexOfCopy = 0;
-            numDelims++;
-        }
-        else if(i+1 == strlen(receivedStr)){//last char
-            memcpy(versionToPrint + indexOfCopy, receivedStr+i, 1*sizeof(char));
-            printf("%s\n", versionToPrint);
-        }
-        else{
-            if(copyIntoFile == 1){
-                memcpy(fileToPrint + indexOfCopy, receivedStr + i, 1*sizeof(char));
-            }
-            else if(copyIntoFile == 0){
-                memcpy(versionToPrint + indexOfCopy, receivedStr + i, 1*sizeof(char));
-            }
-            indexOfCopy++;
-        }
+    for(i = 1;i<numLinesManifest;i++){
+        //For each line output filedata and version
+        char* currentLine = getLineFile(tempServerManifest, i);
+        char* fileName = nthToken(currentLine, 1, ' ');
+        char* versionStr = nthToken(currentLine, 0, ' ');
+        printf("%s %s\n", fileName, versionStr);
     }
+    remove(tempServerManifest);
+    printf("[currentversion] Successfull!\n");
 }
 
 void history(char* projname, int sockfd){
