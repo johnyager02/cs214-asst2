@@ -233,7 +233,10 @@ void commit(char* projname, int sockfd){
 }
 
 void push(char* projname, int sockfd){
-
+    char buff[10];
+    //sendData(sockfd, "myProject", "filename");
+    printf("pushing\n");
+    write(sockfd, "sf4:proj8:testfile", 18);
 }
 
 void create(char* projname, int sockfd){

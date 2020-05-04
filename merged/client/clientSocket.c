@@ -60,7 +60,6 @@ int main(int argc, char** argv) {
         char* config = getFileContents("../.Config");
 
         sscanf(config, "%s %d", &IP, &PORT);
-        printf("%s %d\n", IP, PORT);
     }
     int connfd; 
     struct sockaddr_in servaddr, cli; 
@@ -147,6 +146,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
+            printf("pushing %s\n", argv[2]);
             push(argv[2], sockfd);
         }
     }

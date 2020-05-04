@@ -140,7 +140,8 @@ void sendData(int sockfd, char* projectName, char* fileName){
         numBytesToWrite-=numBytesWritten;
         totalNumBytesWritten+=numBytesWritten;
     }
-    //write(sockfd, buff, sizeof(buff));
+    printf("writing %s\n", buff);
+    write(sockfd, buff, sizeof(buff));
 }
 
 void fetchData(int sockfd, char* projectName, char* fileName){

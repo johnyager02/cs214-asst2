@@ -169,81 +169,117 @@ void handleClientSentCommand(char** output, int clientSockFd){
     }
 }
 
-char** readInputFromClient(char* buff, int fd){
-    printf("%s\n", buff);
-    char success = buff[0];
-    if(success != 'f' || success != 's'){
-        return;
-    }
-    if(success == 'f'){
-        printf("[readInput] Error! command could not be executed\n");
-        return NULL;
-    }
-    char commandType = buff[1];
-    char* projectLengthString = mallocStr(5);
-    int n = 2;
-    while(buff[n++] != ':'){
-        projectLengthString[n-3] = buff[n-1];
-        if((strlen(projectLengthString) % 5) == 0){
-            projectLengthString = reallocStr(projectLengthString, 5 + strlen(projectLengthString));
-        }
-    }
-    int projectLength = atoi(projectLengthString);
-    char* projectName = mallocStr(projectLength+1);
-    strncpy(projectName, buff+n, projectLength);
-    projectName[projectLength] = '\0';
-    n+= projectLength;
-    //free(projectLengthString);
-    char* fileLengthString = mallocStr(5);
-    int a = n+1;
-    while(buff[n++] != ':'){
-        fileLengthString[n-a] = buff[n-1];
-        if((strlen(fileLengthString) % 5) == 0){
-            fileLengthString = reallocStr(fileLengthString, 5 + strlen(fileLengthString));
-        }
-    }
-    int fileLength = atoi(fileLengthString);
-    char* fileName = mallocStr(fileLength+1);
-    strncpy(fileName, buff+n, fileLength);
-    fileName[fileLength] = '\0';
-    //free(fileLengthString);
-    n+=fileLength;
+char** readInputFromClient(int sockfd){
+    char* buff = (char*) mallocStr(BUFFSIZE+1);
+    bzero(buff, (BUFFSIZE+1)*sizeof(char)); 
+    int n; 
+    int numBytesRead = 0;
+    int totalReadInBytes = 0;
+    int currentBufferSize = BUFFSIZE;
+    // infinite loop for chat 
+    for (;;) { 
+        bzero(buff, currentBufferSize + 1); 
+        // read the message from client and copy it in buffer
+        //printf("[readInputFromClient] Reading message now: \n");
+        while(recv(sockfd, buff, 2*sizeof(char), MSG_WAITALL) == 2){
+            printf("arrived\n");
+            char success = buff[0];
+            printf("Success?: %c\n", success);
+            if(success != 'f' && success != 's'){
+                return;
+            }
+            if(success == 'f'){
+                printf("[readInput] Error! command could not be executed\n");
+                return NULL;
+            }
+            char commandType = buff[1];
+            printf("commandType: %c\n", commandType);
+            char* projectLengthString = mallocStr(5);
+            int n = 0;
+            buff[0] = '\0';
+            buff[1] = '\0';
+            while(1){
+                if(read(sockfd, buff+n,1) != 1){printf("Error reading\n"); return;}
+                if(buff[n] == ':'){
+                    break;
+                }
+                projectLengthString[n] = buff[n];
+                if((strlen(projectLengthString) % 5) == 0){
+                    projectLengthString = reallocStr(projectLengthString, 5 + strlen(projectLengthString));
+                }
+                n++;
+            }
+            int projectLength = atoi(projectLengthString);
+            char* projectName = mallocStr(projectLength+1);
+            read(sockfd, projectName, projectLength);
+            projectName[projectLength] = '\0';
+            printf("Project %d %s\n", projectLength, projectName);
+            free(projectLengthString);
+            char* fileLengthString = mallocStr(5);
+            bzero(buff, (BUFFSIZE+1)*sizeof(char));
+            n = 0;
+            while(1){
+                if(read(sockfd, buff+n,1) != 1){printf("Error reading\n"); return;}
+                if(buff[n] == ':'){
+                    break;
+                }
+                fileLengthString[n] = buff[n];
+                if((strlen(fileLengthString) % 5) == 0){
+                    fileLengthString = reallocStr(fileLengthString, 5 + strlen(fileLengthString));
+                }
+                n++;
+            }
+            int fileLength = atoi(fileLengthString);
+            char* fileName = mallocStr(fileLength+1);
+            read(sockfd, fileName, fileLength);
+            fileName[fileLength] = '\0';
+            printf("filename %s\n", fileName);
+            //free(fileLengthString);
 
-    if(commandType == 's'){
-        a = n+1;
-        char* dataLengthString = mallocStr(5);
-        printf("%s\n", buff+n);
-        while(buff[n++] != ':'){
-            dataLengthString[n-a] = buff[n-1];
-            if((strlen(dataLengthString) % 5) == 0){
-                dataLengthString = reallocStr(dataLengthString, 5 + strlen(dataLengthString));
+            if(commandType == 's'){
+                char* dataLengthString = mallocStr(5);
+                bzero(buff, (BUFFSIZE+1)*sizeof(char));
+                n = 0;
+                while(1){
+                    if(read(sockfd, buff+n,1) != 1){printf("Error reading\n"); return;}
+                    if(buff[n] ==':'){
+                        break;
+                    }
+                    dataLengthString[n] = buff[n];
+                    if((strlen(dataLengthString) % 5) == 0){
+                        dataLengthString = reallocStr(dataLengthString, 5 + strlen(dataLengthString));
+                    }
+                }
+                int dataLength = atoi(fileLengthString);
+                char* data = mallocStr(dataLength+1);
+                read(sockfd, data, dataLength);
+                data[dataLength] = '\0';
+                //free(fileLengthString);
+                printf("[readInput] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
+
+                //handleSend
+                //return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
+            }
+            else if(commandType == 'f'){
+                printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+                write(sockfd, "done", 4);
+                break;
+                //handleFetch
+                //handleClientFetched((char**) getOutputArrFetched(success, commandType, projectName, fileName), sockfd);
+                //return NULL;
+            }
+            else if(commandType == 'c'){
+                printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+                //handleSendCommand
+                handleClientSentCommand( (char**) getOutputArrFetched(success, commandType, projectName, fileName), sockfd );
+                //return NULL;
+            }
+            else{
+                printf("Error: command type not recognized");
+                return NULL;
             }
         }
-        int dataLength = atoi(fileLengthString);
-        char* data = mallocStr(dataLength+1);
-        strncpy(data, buff+n, dataLength);
-        data[dataLength] = '\0';
-        //free(fileLengthString);
-        printf("[readInput] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
 
-        //handleSend
-        return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
-    }
-    else if(commandType == 'f'){
-        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
-        //handleFetch
-        handleClientFetched((char**) getOutputArrFetched(success, commandType, projectName, fileName), fd);
-        return NULL;
-    }
-    else if(commandType == 'c'){
-        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
-        //handleSendCommand
-        handleClientSentCommand( (char**) getOutputArrFetched(success, commandType, projectName, fileName), fd );
-        return NULL;
-    }
-    else{
-        printf("Error: command type not recognized");
-        return NULL;
     }
 }
 
@@ -278,7 +314,7 @@ void func(int sockfd){
         //printf("[func] Done reading input\n");
         if(strlen(buff) != 0){ // done reading
             printf("[func] final buffer after read is: \"%s\"\n", buff);
-            readInputFromClient(buff, sockfd);
+            //readInputFromClient(buff, sockfd);
         }
         // print buffer which contains the client contents 
         //printf("From client: %s\t To client : ", buff); 
@@ -358,7 +394,7 @@ int main(int argc, char** argv)
         printf("server acccept the client...\n"); 
   
     // Function for chatting between client and server 
-    func(connfd); 
+    readInputFromClient(connfd); 
     
     // After chatting close the socket 
     close(sockfd); 
