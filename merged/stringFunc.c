@@ -82,3 +82,20 @@ char* reallocStr(char* oldStr, int newSize){ //Reallocs char* and checks for err
 	}
 	return newStr;
 }
+
+char* trimEndToDelim(char* str, char delimiter){ // given "proj0/sub1/sub2/file1" -> gets "proj0/sub1/sub2/file1"
+    int lastCharIndex;
+	if(strlen(str) == 0){
+		return NULL;
+	}
+	for(lastCharIndex = strlen(str) -1; lastCharIndex>=0;lastCharIndex--){
+		if(str[lastCharIndex] == delimiter){
+			char* final = mallocStr(strlen(str) + 1);
+			bzero(final, strlen(str) + 1);
+			memcpy(final, str, (lastCharIndex) * sizeof(char));
+			//free(str);
+			return final;
+		}
+	}
+	return NULL;
+}

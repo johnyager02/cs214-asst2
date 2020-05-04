@@ -6,6 +6,29 @@
 #include<errno.h>
 #include"stringFunc.h"
 #include"manifestFunc.h"
+#include<sys/stat.h>
+
+int existsFile(char* filename){ 
+    int file = open(filename, O_RDONLY, 00644);
+    if(file < 0){
+        return 0;
+    }
+    else{
+        close(file);
+        return 1;
+    }
+}
+
+int existsDir(char* dirpath){
+    DIR* dirptr = opendir(dirpath);
+    if(dirptr){
+        closedir(dirptr);
+        return 1;
+    } 
+    else if(errno == ENOENT){
+        return 0;
+    }
+}
 
 char* generateNewDirPath(char* oldPath, char* dirName){
     char* newDirPath1 = prependToStr(dirName, oldPath);
@@ -128,3 +151,46 @@ int isEmptyDir(char* dirpath){
     } 
     return 0;
 }
+
+void recursiveMakeSubDir(char* filepath){
+    if(existsDir(filepath) == 1){
+        return;
+    }
+    //doesnt exist -> make dir for that
+    int mkDir = mkdir(filepath, 0777);
+    if(mkDir>= 0){
+        printf("[recursiveMakeSubDir] Made DIR: \"%s\"\n", filepath);
+        return;
+    }
+    //Can't make dir with given dirpath -> make subdir first
+    char* nextDirPath = trimEndToDelim(filepath, '/');
+    if(nextDirPath != NULL){
+        //make subdirs first:
+        recursiveMakeSubDir(nextDirPath);
+        // make current dir
+        mkDir = mkdir(filepath, 0777);
+        printf("[recursiveMakeSubDir] Made DIR: \"%s\"\n", filepath);
+    }
+}
+
+void createNewFile(char* filepath){
+    if(existsFile(filepath) == 1){
+        return;
+    }
+    //file doesn't exist create it
+
+    int createFile;
+    if((createFile = open(filepath, O_RDWR|O_CREAT, 00644)) < 0){
+        //create failed -> make new subdirectories until can create;
+        char* nextSubDirPath = trimEndToDelim(filepath, '/');
+        recursiveMakeSubDir(nextSubDirPath);
+        createFile = open(filepath, O_RDWR|O_CREAT, 00644);
+        if(createFile > 0 ){
+            printf("[writeNewFile] Made FILE: \"%s\"\n", filepath);
+        } else{
+            printf("[writeNewFile] Failed to make FILE: \"%s\"\n", filepath);
+        }
+    }
+    return;
+}
+
