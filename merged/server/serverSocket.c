@@ -252,81 +252,41 @@ char** readInputFromClient(int sockfd){
 }
 
 void testfunc(int sockfd){
+    struct sockaddr_in cli; 
+    int len, connfd;
     while(1){
-        
+        if ((listen(sockfd, 5)) != 0) { 
+            printf("Listen failed...\n"); 
+            exit(0); 
+        } 
+        else
+            printf("Server listening..\n"); 
+        len = sizeof(cli); 
+    
+        // Accept the data packet from client and verification 
+        connfd = accept(sockfd, (SA*)&cli, &len); 
+        if (connfd < 0) { 
+            printf("server acccept failed...\n"); 
+            exit(0); 
+        } 
+        else
+            printf("server acccept the client...\n"); 
+
         //printf("[func] Done reading input\n");
-        if(readInputFromClient(sockfd) == NULL){
+        if(readInputFromClient(connfd) == NULL){
             break;
         }
 
     }
 }
 
-// Function designed for chat between client and server. 
-void func(int sockfd){ 
-
-    char* buff = (char*) mallocStr(BUFFSIZE+1);
-    bzero(buff, (BUFFSIZE+1)*sizeof(char)); 
-    int n; 
-    int numBytesRead = 0;
-    int totalReadInBytes = 0;
-    int currentBufferSize = BUFFSIZE;
-    // infinite loop for chat 
-    for (;;) { 
-        bzero(buff, currentBufferSize + 1); 
-        // read the message from client and copy it in buffer
-        //printf("[func] Reading message now: \n");
-        while((numBytesRead = read(sockfd, buff + totalReadInBytes, 5*sizeof(char))) != 0){
-            
-            printf("[func] Current buffer is: \"%s\"\n", buff);
-            totalReadInBytes+=numBytesRead;
-            printf("[func] NumBytesRead is: %d\n", numBytesRead);
-            if(totalReadInBytes==currentBufferSize){//realloc buff
-                printf("[func] Reallocing buffer\n");
-                buff = (char*) reallocStr(buff, 2*currentBufferSize + 1);
-                currentBufferSize = 2*currentBufferSize;
-                printf("[func] Current buffer size is: %d\n", currentBufferSize);
-                memset(buff + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
-            }
-            printf("[func] totalReadInBytes is: %d\n", totalReadInBytes);
-        }
-        //printf("[func] Done reading input\n");
-        if(strlen(buff) != 0){ // done reading
-            printf("[func] final buffer after read is: \"%s\"\n", buff);
-            //readInputFromClient(buff, sockfd);
-        }
-        // print buffer which contains the client contents 
-        //printf("From client: %s\t To client : ", buff); 
-        //printf("[func] Done reading input\n");
-        bzero(buff, currentBufferSize); 
-        totalReadInBytes = 0;  
-        numBytesRead = 0;
-        currentBufferSize = BUFFSIZE;
-        buff = (char*) reallocStr( buff, currentBufferSize + 1);
-        //printf("[func] Current buffer size is: %d\n", currentBufferSize);
-        n = 0; 
-        // copy server message in the buffer 
-        // while ((buff[n++] = getchar()) != '\n') 
-        //     ; 
-  
-        // and send that buffer to client 
-        //write(sockfd, buff, sizeof(buff)); 
-  
-        // if msg contains "Exit" then server exit and chat ended. 
-        if (strncmp("exit", buff, 4) == 0) { 
-            printf("Server Exit...\n"); 
-            break; 
-        } 
-    } 
-} 
-
 // Driver function 
 int main(int argc, char** argv) 
 { 
     int PORT;
     sscanf(argv[1], "%d", &PORT);
-    int sockfd, connfd, len; 
-    struct sockaddr_in servaddr, cli; 
+    int sockfd;
+    struct sockaddr_in servaddr;
   
     // socket create and verification 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
@@ -356,26 +316,11 @@ int main(int argc, char** argv)
         printf("Socket successfully binded..\n"); 
   
     // Now server is ready to listen and verification 
-    if ((listen(sockfd, 5)) != 0) { 
-        printf("Listen failed...\n"); 
-        exit(0); 
-    } 
-    else
-        printf("Server listening..\n"); 
-    len = sizeof(cli); 
-  
-    // Accept the data packet from client and verification 
-    connfd = accept(sockfd, (SA*)&cli, &len); 
-    if (connfd < 0) { 
-        printf("server acccept failed...\n"); 
-        exit(0); 
-    } 
-    else
-        printf("server acccept the client...\n"); 
+    
   
     // Function for chatting between client and server 
     //readInputFromClient(connfd); 
-    testfunc(connfd);
+    testfunc(sockfd);
     
     // After chatting close the socket 
     close(sockfd); 
