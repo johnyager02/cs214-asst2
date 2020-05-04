@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
     struct sockaddr_in servaddr, cli; 
   
     // socket create and varification 
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+    int sockfd = socket(AF_INET, SOCK_STREAM , 0); 
     if (sockfd == -1) { 
         printf("socket creation failed...\n"); 
         exit(0); 
@@ -192,7 +192,9 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            rollback(argv[2], atoi(argv[3]), sockfd);
+            int versionNum;
+            sscanf(argv[3], "%d", &versionNum);
+            rollback(argv[2], versionNum, sockfd);
         }
     }
 }
