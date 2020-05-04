@@ -1,7 +1,7 @@
 #ifndef WTF
 #define WTF
 
-int existsFile(char*);
+
 void configure(char*, char*);
 void checkout(char*, int);
 void update(char*, int );
@@ -17,7 +17,7 @@ void history(char* , int);
 void rollback(char* ,int, int );
 char* nthDirPathToName(char*, int);
 char* filepathToName(char*);
-int existsFile(char*);
+
 
 
 #endif
