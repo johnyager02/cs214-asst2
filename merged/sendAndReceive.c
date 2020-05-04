@@ -41,76 +41,92 @@ char** getOutputArrFetched(char status, char commandType, char* projectName, cha
     return output;
 }
 
-char** readInput(char* buff, int fd){
-    char success = buff[0];
-    if(success == 'f'){
-        printf("[readInput] Error! command could not be executed\n");
-        return NULL;
-    }
-    char commandType = buff[1];
-    char* projectLengthString = mallocStr(5);
-    int n = 2;
-    while(buff[n++] != ':'){
-        projectLengthString[n-3] = buff[n-1];
-        if((strlen(projectLengthString) % 5) == 0){
-            projectLengthString = reallocStr(projectLengthString, 5 + strlen(projectLengthString));
+char* readFromSock(int sockfd, int numBytesToRead){
+    char* buff = (char*) mallocStr(numBytesToRead+1);
+    bzero(buff, (numBytesToRead+1)*sizeof(char)); 
+    int numBytesRead = 0;
+    int totalReadInBytes = 0;
+    int currentBufferSize = numBytesToRead;
+    int readFinished = 0;
+    do{
+        //Read until read enough bytes in total as specified by numBytesToRead...
+        numBytesRead = read(sockfd, buff + totalReadInBytes, (numBytesToRead-totalReadInBytes)*sizeof(char));
+        //Read enough ->stop reading
+        if(totalReadInBytes == numBytesToRead){
+            readFinished = 1;
+            break;
         }
-    }
-    int projectLength = atoi(projectLengthString);
-    char* projectName = mallocStr(projectLength+1);
-    strncpy(projectName, buff+n, projectLength);
-    projectName[projectLength] = '\0';
-    n+= projectLength;
-    //free(projectLengthString);
-    char* fileLengthString = mallocStr(5);
-    int a = n+1;
-    while(buff[n++] != ':'){
-        fileLengthString[n-a] = buff[n-1];
-        if((strlen(fileLengthString) % 5) == 0){
-            fileLengthString = reallocStr(fileLengthString, 5 + strlen(fileLengthString));
-        }
-    }
-    int fileLength = atoi(fileLengthString);
-    char* fileName = mallocStr(fileLength+1);
-    strncpy(fileName, buff+n, fileLength);
-    fileName[fileLength] = '\0';
-    //free(fileLengthString);
-    n+=fileLength;
-
-    if(commandType == 's'){
-        a = n+1;
-        char* dataLengthString = mallocStr(5);
-        printf("%s\n", buff+n);
-        while(buff[n++] != ':'){
-            dataLengthString[n-a] = buff[n-1];
-            if((strlen(dataLengthString) % 5) == 0){
-                dataLengthString = reallocStr(dataLengthString, 5 + strlen(dataLengthString));
+        //Actually read into buffer >0 bytes
+        if(numBytesRead>0){
+            printf("[readFromSock] Current buffer is: \"%s\"\n", buff);
+            totalReadInBytes+=numBytesRead;
+            printf("[readFromSock] NumBytesRead is: %d\n", numBytesRead);
+            if(totalReadInBytes==currentBufferSize){//realloc buff
+                printf("[readFromSock] Reallocing buffer\n");
+                buff = (char*) reallocStr(buff, 2*currentBufferSize + 1);
+                currentBufferSize = 2*currentBufferSize;
+                printf("[readFromSock] Current buffer size is: %d\n", currentBufferSize);
+                memset(buff + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
             }
+            printf("[readFromSock] totalReadInBytes is: %d\n", totalReadInBytes);
         }
-        int dataLength = atoi(fileLengthString);
-        char* data = mallocStr(dataLength+1);
-        strncpy(data, buff+n, dataLength);
-        data[dataLength] = '\0';
-        //free(fileLengthString);
-        printf("[readInput] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
+    }while(readFinished ==0);
+    if(strlen(buff) != 0){ // done reading
+        printf("[readFromSock] final buffer after read is: \"%s\"\n", buff);
+    }
+    return buff;
+}
 
-        //handleSend
-        return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
+char* readFromSockIntoBuff(int sockfd, char* buff, int numBytesToRead){ 
+    int numBytesRead = 0;
+    int totalReadInBytes = 0;
+    int currentBufferSize = numBytesToRead;
+    printf("[readFromSockIntoBuff] numBytesToRead is: %d\n", numBytesToRead);
+    int readFinished = 0;
+    do{
+        //Read until read enough bytes in total as specified by numBytesToRead...
+        numBytesRead = read(sockfd, buff + totalReadInBytes, (numBytesToRead-totalReadInBytes)*sizeof(char));
+        //Read enough ->stop reading
+        //Actually read into buffer >0 bytes
+        if(numBytesRead>0){
+            //printf("[readFromSockIntoBuff] Current buffer is: \"%s\"\n", buff);
+            totalReadInBytes+=numBytesRead;
+            if(totalReadInBytes == numBytesToRead){
+                readFinished = 1;
+                break;
+            }
+            //printf("[readFromSockIntoBuff] NumBytesRead is: %d\n", numBytesRead);
+            if(totalReadInBytes==currentBufferSize){//realloc buff
+                printf("[readFromSockIntoBuff] Reallocing buffer\n");
+                buff = (char*) reallocStr(buff, 2*currentBufferSize + 1);
+                currentBufferSize = 2*currentBufferSize;
+                printf("[readFromSockIntoBuff] Current buffer size is: %d\n", currentBufferSize);
+                memset(buff + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
+            }
+            printf("[readFromSockIntoBuff] totalReadInBytes is: %d\n", totalReadInBytes);
+        }
+    }while(readFinished ==0);
+    if(strlen(buff) != 0){ // done reading
+        printf("[readFromSockIntoBuff] final buffer after read is: \"%s\" w/ total bytes: %d\n", buff, totalReadInBytes);
     }
-    else if(commandType == 'f'){
-        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
-        //handleFetch
-        return  (char**) getOutputArrFetched(success, commandType, projectName, fileName);
+    return buff;
+}
+
+int writeToSock(int sockfd, char* buff){
+    int numBytesToWrite = strlen(buff);
+    int numBytesWritten = 0;
+    int totalNumBytesWritten = 0;
+    printf("[writeToSock] Writing buffer: \"%s\"\n", buff);
+    do{
+        numBytesWritten = write(sockfd, buff + totalNumBytesWritten, (numBytesToWrite-totalNumBytesWritten)*sizeof(char));
+        printf("Numbyteswritten is: %d\n", numBytesWritten);
+        numBytesToWrite-=numBytesWritten;
+        totalNumBytesWritten+=numBytesWritten;
+    }while(numBytesToWrite>0 && buff[totalNumBytesWritten]!='\0');
+    if(totalNumBytesWritten == numBytesToWrite){
+        return 1;
     }
-    else if(commandType == 'c'){
-        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
-        //handleSendCommand
-        return (char**) getOutputArrFetched(success, commandType, projectName, fileName);
-    }
-    else{
-        printf("Error: command type not recognized");
-        return NULL;
-    }
+    return 0;
 }
 
 void sendData(int sockfd, char* projectName, char* fileName){
@@ -126,17 +142,8 @@ void sendData(int sockfd, char* projectName, char* fileName){
     char* buff = mallocStr(2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + strlen(dataLengthString) + 1 + dataLengthInt + 1);
     sprintf(buff, "%c%c%s:%s%s:%s%s:%s", success, 's', projectLengthString, projectName, fileLengthString, fileName, dataLengthString, data);
     buff[2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + strlen(dataLengthString) + 1 + dataLengthInt] = '\0';
-    printf("[send] \"%s\"\n", buff);
-    
-    int numBytesToWrite = strlen(buff);
-    int numBytesWritten = 0;
-    int totalNumBytesWritten = 0;
-    while(numBytesToWrite > 0){
-        numBytesWritten = write(sockfd, buff + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
-        numBytesToWrite-=numBytesWritten;
-        totalNumBytesWritten+=numBytesWritten;
-    }
-    //write(sockfd, buff, sizeof(buff));
+    printf("[sendData] \"%s\"\n", buff);
+    writeToSock(sockfd, buff);
 }
 
 void fetchData(int sockfd, char* projectName, char* fileName){
@@ -148,17 +155,8 @@ void fetchData(int sockfd, char* projectName, char* fileName){
     char* buff = mallocStr(2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + 1);
     sprintf(buff, "%c%c%s:%s%s:%s", success, 'f' , projectLengthString, projectName, fileLengthString, fileName);
     buff[2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt] = '\0';
-    printf("[fetch] \"%s\"\n", buff);
-
-    int numBytesToWrite = strlen(buff);
-    int numBytesWritten = 0;
-    int totalNumBytesWritten = 0;
-    while(numBytesToWrite > 0){
-        numBytesWritten = write(sockfd, buff + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
-        numBytesToWrite-=numBytesWritten;
-        totalNumBytesWritten+=numBytesWritten;
-    }
-    //write(sockfd, buff, sizeof(buff));
+    printf("[fetchData] \"%s\"\n", buff);
+    writeToSock(sockfd, buff);
 }
 
 void sendCommand(int sockfd, char* projectName, char* commandName){
@@ -174,15 +172,33 @@ void sendCommand(int sockfd, char* projectName, char* commandName){
     char* buff = mallocStr(2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(commandLengthString) + 1 + commandLengthInt + 1);
     sprintf(buff, "%c%c%s:%s%s:%s", success, 'c' , projectLengthString, projectName, commandLengthString, commandName);
     buff[2 +  strlen(projectLengthString) + 1 + projectLengthInt + strlen(commandLengthString) + 1 + commandLengthInt] = '\0';
-    printf("[send] \"%s\"\n", buff);
-
-    int numBytesToWrite = strlen(buff);
-    int numBytesWritten = 0;
-    int totalNumBytesWritten = 0;
-    while(numBytesToWrite > 0){
-        numBytesWritten = write(sockfd, buff + totalNumBytesWritten, (numBytesToWrite)*sizeof(char));
-        numBytesToWrite-=numBytesWritten;
-        totalNumBytesWritten+=numBytesWritten;
-    }
-    //write(sockfd, buff, sizeof(buff));
+    printf("[sendCommand] \"%s\"\n", buff);
+    writeToSock(sockfd, buff);
 }
+
+char* getNextUnknownLen(int sockfd){
+    char* message = mallocStr(65);
+    bzero(message, 65*sizeof(char));
+    int totalReadInBytes = 0;
+    char* oldStr;
+    do{
+        char buff[2];
+        bzero(buff, 2*sizeof(char));
+        char* newRead = readFromSockIntoBuff(sockfd, buff, 1*sizeof(char));
+        int newReadLen = strlen(newRead);
+        totalReadInBytes+=newReadLen;
+        if(newRead[0] == ':'){
+            break;
+        }
+        else{
+            memcpy(message+totalReadInBytes-1, newRead, 1*sizeof(char));
+        }
+    }while(message[totalReadInBytes]!= ':');
+    //oldStr = message;
+    //message = prependToStr(oldStr, firstRead);
+    printf("[readInputProtocol] Length from server: \"%s\"\n", message);
+    return message;
+}
+
+
+

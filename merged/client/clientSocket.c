@@ -60,13 +60,12 @@ int main(int argc, char** argv) {
         char* config = getFileContents("../.Config");
 
         sscanf(config, "%s %d", &IP, &PORT);
-        printf("%s %d\n", IP, PORT);
     }
     int connfd; 
     struct sockaddr_in servaddr, cli; 
   
     // socket create and varification 
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+    int sockfd = socket(AF_INET, SOCK_STREAM , 0); 
     if (sockfd == -1) { 
         printf("socket creation failed...\n"); 
         exit(0); 
@@ -147,6 +146,7 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
+            printf("pushing %s\n", argv[2]);
             push(argv[2], sockfd);
         }
     }
@@ -192,7 +192,9 @@ int parseInput(int sockfd, int argc, char** argv){
             return -1;
         }
         else{
-            rollback(argv[2], atoi(argv[3]), sockfd);
+            int versionNum;
+            sscanf(argv[3], "%d", &versionNum);
+            rollback(argv[2], versionNum, sockfd);
         }
     }
 }
