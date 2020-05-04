@@ -115,9 +115,16 @@ void handleClientSentCommand(char** output, int clientSockFd){
         recursiveDelete(projName);
         if(isEmptyDir(projName)){
             printf("[handleClientSentCommand] Deleted proj: \"%s\"\n", projName);
+            //Delete empty proj dir
+            rmdir(projName);
             //send back success
+            sendData(clientSockFd, projName, "success");
             
-        } else printf("[handleClientSentCommand] Failed to delete proj: \"%s\"\n", projName);
+        } else{
+            printf("[handleClientSentCommand] Failed to delete proj: \"%s\"\n", projName);
+            //send back failed
+            sendData(clientSockFd, projName, "");
+        } 
         
         
     }
@@ -136,7 +143,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
         //send history
         printf("[handleClientSentCommand] Client sent command to send history of project: \"%s\"\n", projName);
     }
-    else if(compareString(commandName, "rollback")){
+    else if(compareString(commandName, "rollback") == 0){
         /*The rollback command will fail if the project name doesn’t exist on the server or the version number given is invalid. 
          The server will revert its current version of the project back to the version number requested by
         the client by deleting all more recent versions saved on the server side.*/
@@ -224,18 +231,24 @@ char** readInputFromClient(int sockfd){
     else if(commandType == 'f'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleFetch
-        //return  (char**) getOutputArrFetched(success, commandType, projectName, fileName);
+        char** output = (char**) getOutputArrFetched(success, commandType, projectName, fileName);
+        handleClientFetched( output, sockfd);
+        return output;
     }
     else if(commandType == 'c'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleSendCommand
-        return (char**) getOutputArrFetched(success, commandType, projectName, fileName);
+        if(compareString(fileName, "stop") == 0 ){
+            return NULL;
+        }
+        handleClientSentCommand( (char**) getOutputArrFetched(success, commandType, projectName, fileName), sockfd);
+        return NULL;
     }
     else{
         printf("Error: command type not recognized");
         return NULL;
     }
-    return NULL;
+    //return NULL;
 }
 
 void testfunc(int sockfd){

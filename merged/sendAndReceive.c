@@ -134,7 +134,17 @@ void sendData(int sockfd, char* projectName, char* fileName){
     char* projectLengthString = numToStr(projectLengthInt);
     int fileLengthInt = strlen(fileName);
     char* fileLengthString = numToStr(fileLengthInt);
-    char* data = getFileContents(fileName);
+    char* data;
+    if(fileLengthInt>0){
+        if(existsFile(fileName) == 1){ //is file -> sending over filedata
+            data = getFileContents(fileName);
+        }
+        else{// message
+            data = fileName;
+        }
+    }else{
+        data = "";
+    }
     //char* data = "file contents are right here";
     int dataLengthInt = strlen(data);
     char* dataLengthString = numToStr(dataLengthInt);

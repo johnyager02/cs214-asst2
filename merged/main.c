@@ -196,7 +196,7 @@ int main(int argc, char** argv){
     // overwriteOrCreateFile("server/proj1/test0", "test0succeeded");
     // overwriteOrCreateFile("server/proj1/test1", "test1succeeded");
     // overwriteOrCreateFile("server/proj1/test2", "test2succeeded");
-    // recursiveDelete("proj1/");
+     //recursiveDelete("client/proj1/");
     // rmdir("proj1");
     //checkout("proj1", 11);
     
