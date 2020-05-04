@@ -75,7 +75,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
         // Server: check if project exists:
         if(existsDir(projName) == 1){
             //send failure
-            sendData(clientSockFd, projName, "fs");
+            sendData(clientSockFd, projName, "");
         }
 
         //Create proj folder w/ name
@@ -115,9 +115,16 @@ void handleClientSentCommand(char** output, int clientSockFd){
         recursiveDelete(projName);
         if(isEmptyDir(projName)){
             printf("[handleClientSentCommand] Deleted proj: \"%s\"\n", projName);
+            //Delete empty proj dir
+            rmdir(projName);
             //send back success
+            sendData(clientSockFd, projName, "success");
             
-        } else printf("[handleClientSentCommand] Failed to delete proj: \"%s\"\n", projName);
+        } else{
+            printf("[handleClientSentCommand] Failed to delete proj: \"%s\"\n", projName);
+            //send back failed
+            sendData(clientSockFd, projName, "");
+        } 
         
         
     }

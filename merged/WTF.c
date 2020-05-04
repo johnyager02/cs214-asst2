@@ -392,6 +392,19 @@ void create(char* projname, int sockfd){
 
 void destroy(char* projname, int sockfd){
     sendCommand(sockfd, projname, "destroy");
+    char** output = readInputFromServer(sockfd);
+    if(output == NULL){
+        printf("[destroy] Failed!\n");
+        //close(sockfd);
+        return;
+    }
+    if(output[0][0] == 'f'){
+        printf("[destroy] Failed!\n");
+        //close(sockfd);
+        return;
+    } else if(output[0][0] == 's'){
+        printf("[destroy] Successfully destroyed project: \"%s\"!\n", projname);
+    }
 }
 
 void add(char* projname, char* filename){ // Expects projname as format: "proj0" and filename format as: "test0" && "proj0/test0"
