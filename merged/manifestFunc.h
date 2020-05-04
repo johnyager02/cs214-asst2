@@ -1,6 +1,7 @@
 #ifndef manifestFunc
 #define manifestFunc
 
+void overwriteOrCreateFile(char*, char*);
 unsigned char* getHash(char*);
 unsigned char* mallocUChar(int);
 void printHash(unsigned char*, char*);

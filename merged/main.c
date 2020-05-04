@@ -163,6 +163,43 @@ int main(int argc, char** argv){
     //     printf("IS EMPTY\n");
     // }else printf("NOT EMPTY\n");
 
+    //Test writing file
+    // int fd = creat("proj1/test1", O_RDWR);
+    // if(fd<0){
+    //     printf("Create failed:\n");
+    // }
+    //Test trimend
+    // printf("[Main] str after trim is: \"%s\"\n", trimEndToDelim("proj0/sub1/sub2/file1", '/')); -> "proj0/sub1/sub2"
+    // printf("[Main] str after trim is: \"%s\"\n", trimEndToDelim("proj0/sub1/sub2", '/')); -> "proj0/sub1"
+    // printf("[Main] str after trim is: \"%s\"\n", trimEndToDelim("proj0/sub1", '/')); -> "proj0"
+    // printf("[Main] str after trim is: \"%s\"\n", trimEndToDelim("proj0", '/')); -> NULL
+    //Test writeNewFile()
+    //writeNewFile("proj1/sub1/sub2/sub3/file1"); -> works!
+    //recursiveDelete("proj1/");
+    
+    // char* line = getLineToAdd(0, "proj0/test0");
+    // addToManifest("server/proj1/.Manifest", line);
+    // line = getLineToAdd(0, "proj0/test1");
+    // addToManifest("server/proj1/.Manifest", line);
+    // line = getLineToAdd(0, "proj0/test2");
+    // addToManifest("server/proj1/.Manifest", line);
+    // line = getLineToAdd(0, "Makefile");
+    // addToManifest("server/proj1/.Manifest", line);
+
+    
+
+    //Test void checkout:
+    //Resetting test files: create files
+    // createNewFile("server/proj1/test0");
+    // createNewFile("server/proj1/test1");
+    // createNewFile("server/proj1/test2");
+    // overwriteOrCreateFile("server/proj1/test0", "test0succeeded");
+    // overwriteOrCreateFile("server/proj1/test1", "test1succeeded");
+    // overwriteOrCreateFile("server/proj1/test2", "test2succeeded");
+    recursiveDelete("proj1/");
+    rmdir("proj1");
+    //checkout("proj1", 11);
+    
 
     return 0;
 }

@@ -9,6 +9,18 @@
 #include"recursiveD.h"
 #include"WTF.h"
 
+void overwriteOrCreateFile(char* filepath, char* newdata){
+    int file = open(filepath, O_RDWR | O_CREAT | O_TRUNC, 00644);
+    int numBytesToWrite = strlen(newdata);
+    int numBytesWritten = 0;
+    int totalNumBytesWritten = 0;
+    while(numBytesToWrite > 0){
+        numBytesWritten = write(file, newdata + totalNumBytesWritten, (numBytesToWrite-totalNumBytesWritten)*sizeof(char));
+        numBytesToWrite-=numBytesWritten;
+        totalNumBytesWritten+=numBytesWritten;
+    }
+    close(file);
+}
 
 char* nthToken(char* str, int n, char delimiter){ //given str -> return nth token EX) "./proj0/dir0/" w/ n=2-> "dir0"; n is like array index, n=0 is first dirname "."
     char* token = (char*) mallocStr(strlen(str));

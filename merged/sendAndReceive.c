@@ -113,10 +113,6 @@ char** readInput(char* buff, int fd){
     }
 }
 
-
-
-
-
 void sendData(int sockfd, char* projectName, char* fileName){
     int projectLengthInt = strlen(projectName);
     char* projectLengthString = numToStr(projectLengthInt);

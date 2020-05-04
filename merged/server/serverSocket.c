@@ -16,28 +16,6 @@
 #define BUFFSIZE 10 
 #define SA struct sockaddr 
 
-int existsFile(char* filename){ 
-    int file = open(filename, O_RDONLY, 00644);
-    if(file < 0){
-        return 0;
-    }
-    else{
-        close(file);
-        return 1;
-    }
-}
-
-int existsDir(char* dirpath){
-    DIR* dirptr = opendir(dirpath);
-    if(dirptr){
-        closedir(dirptr);
-        return 1;
-    } 
-    else if(errno == ENOENT){
-        return 0;
-    }
-}
-
 
 void handleClientFetched(char** output, int clientSockFd){
     char* status = output[0];
@@ -118,9 +96,9 @@ void handleClientSentCommand(char** output, int clientSockFd){
         // free(manifestPath);
     }
     else if(compareString(commandName, "destroy") == 0){
-        /*The destroy command will fail if the project name doesn’t exist on the server
-         On receiving a destroy command the server should lock the repository, expire any pending commits,
-        delete all files and subdirectories under the project and send back a success message.*/
+    /*The destroy command will fail if the project name doesn’t exist on the server
+    On receiving a destroy command the server should lock the repository, expire any pending commits,
+    delete all files and subdirectories under the project and send back a success message.*/
 
         printf("[handleClientSentCommand] Client sent command to destroy project: \"%s\"\n", projName);
         //lock repository
