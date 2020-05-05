@@ -13,8 +13,10 @@
 #include "../sendAndReceive.h"
 #include<signal.h>
 #include "../manifestFunc.h"
+#include<pthread.h>
 #define BUFFSIZE 10 
 #define SA struct sockaddr 
+pthread_mutex_t lock; 
 
 
 void handleClientFetched(char** output, int clientSockFd){
@@ -251,7 +253,11 @@ char** readInputFromClient(int sockfd){
     //return NULL;
 }
 
-void testfunc(int sockfd){
+void testfunc(void* arg){
+    pthread_mutex_lock(&lock);
+    int sockfd = *(int*)arg;
+
+    printf("Job %d started\n", sockfd);
     struct sockaddr_in cli; 
     int len, connfd;
     while(1){
@@ -276,8 +282,10 @@ void testfunc(int sockfd){
         if(readInputFromClient(connfd) == NULL){
             break;
         }
-
     }
+    printf("job %d ended\n", sockfd);
+
+    pthread_mutex_unlock(&lock);
 }
 
 // Driver function 
@@ -317,9 +325,6 @@ int main(int argc, char** argv)
   
     // Now server is ready to listen and verification 
     
-  
-    // Function for chatting between client and server 
-    //readInputFromClient(connfd); 
     testfunc(sockfd);
     
     // After chatting close the socket 
