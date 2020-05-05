@@ -17,6 +17,13 @@
 #define BUFFSIZE 10 
 #define SA struct sockaddr 
 pthread_mutex_t lock;
+typedef struct mutexHolder{
+    pthread_mutex_t lock;
+    char* project;
+    struct mutexHolder* next;
+}mutexHolder;
+
+mutexHolder* mutexes = NULL;
 
 
 void handleClientFetched(char** output, int clientSockFd){
@@ -166,6 +173,73 @@ void handleClientSentCommand(char** output, int clientSockFd){
     }
 }
 
+void addMutexToList(mutexHolder* m){
+    if(mutexes == NULL){
+        mutexes = m;
+    }
+    else{
+        m->next = mutexes;
+        mutexes = m;
+    }
+    return;
+}
+
+pthread_mutex_t findMutex(char* proj){
+    mutexHolder* ptr = mutexes;
+    while(ptr != NULL){
+        if(compareString(proj, ptr->project) == 0){
+            return ptr->lock;
+        }
+        ptr = ptr->next;
+    }
+    printf("error: mutex for project %s could not be found\n", proj);
+    exit(1);
+}
+
+int createMutexes(){
+    DIR* currentDirPtr = opendir("./");
+    if(currentDirPtr == NULL){
+        printf("DIR not found!\n");
+        return -1;
+    }
+    struct dirent* currentPtr;
+    readdir(currentDirPtr);
+    readdir(currentDirPtr);
+    currentPtr = readdir(currentDirPtr);
+    while(currentPtr!=NULL){
+
+        if(currentPtr->d_type == DT_DIR){
+            char* dirName = currentPtr->d_name;
+            if(compareString(dirName, "previous") != 0){
+                mutexHolder* newMutex = malloc(sizeof(mutexHolder));
+                newMutex->project = dirName;
+                if(pthread_mutex_init((&newMutex->lock), NULL) != 0){
+                    printf("Error creating mutex for %s\n", dirName);
+                    exit(1);
+                }
+                newMutex->next = NULL;
+                addMutexToList(newMutex);
+            }
+        }
+        currentPtr = readdir(currentDirPtr);
+    }
+    close(currentDirPtr);
+    return 0;
+}
+
+
+void destroyMutexes(){
+    mutexHolder* ptr = mutexes;
+    while(ptr != NULL){
+        pthread_mutex_destroy(&(ptr->lock));
+        mutexHolder* f = ptr;
+        ptr = ptr->next;
+        free(f->project);
+        free(f);
+    }
+    return;
+}
+
 
 char** readInputFromClient(int sockfd){
     //Want to read <s/f><s/f/c><projLen>:<projName><fileLen>:<fileName> or for send:<s/f><s/f/c><projLen>:<projName><fileLen>:<fileName><dataLen>:<data>
@@ -198,7 +272,6 @@ char** readInputFromClient(int sockfd){
 
     //Read project length
     char* projectLengthString = getNextUnknownLen(sockfd);
-    printf("[readInputProtocol] projLenStr is: \"%s\"\n", projectLengthString);
     
     int projectLength;
     sscanf(projectLengthString, "%d", &projectLength);
@@ -207,11 +280,9 @@ char** readInputFromClient(int sockfd){
     char* projectName = mallocStr(projectLength+1);
     bzero(projectName, (projectLength+1)*sizeof(char));
     projectName = readFromSockIntoBuff(sockfd, projectName, projectLength);
-    printf("[readInputProtocol] projName is: \"%s\"\n", projectName);
 
     //Read fileName Length:
     char* fileLengthString = getNextUnknownLen(sockfd);
-    printf("[readInputProtocol] fileLenStr is: \"%s\"\n", fileLengthString);
     int fileLength;
     sscanf(fileLengthString, "%d", &fileLength);
     
@@ -219,16 +290,16 @@ char** readInputFromClient(int sockfd){
     char* fileName = mallocStr(fileLength+1);
     bzero(fileName, (fileLength+1)*sizeof(char));
     fileName = readFromSockIntoBuff(sockfd, fileName, fileLength);
-    printf("[readInputProtocol] fileName is: \"%s\"\n", fileName);
 
     //Done reading...
-    printf("[readInputProtocol] Done Reading -> handling commandType cases\n");
     
-    
+    pthread_mutex_t mu = findMutex(projectName);
+    pthread_mutex_lock(&mu);
+    printf("Mutex %s locked\n", projectName);
+
     if(commandType == 's'){
         //Read dataLen:
         char* dataLengthString = getNextUnknownLen(sockfd);
-        printf("[readInputProtocol] DataLen is: \"%s\"\n", dataLengthString);
         int dataLength;
         sscanf(dataLengthString, "%d", &dataLength);
         
@@ -238,7 +309,12 @@ char** readInputFromClient(int sockfd){
         data = readFromSockIntoBuff(sockfd, data, dataLength);
 
         printf("[readInputProtocol] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
-
+        char** temp = malloc(sizeof(char*)*2);
+        temp[0] = "st";
+        temp[1] = "ff";
+        pthread_mutex_unlock(&mu);
+        printf("Mutex %s unlocked\n", projectName);
+        return temp;
         //handleSend
         //return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
     }
@@ -247,6 +323,8 @@ char** readInputFromClient(int sockfd){
         //handleFetch
         char** output = (char**) getOutputArrFetched(success, commandType, projectName, fileName);
         handleClientFetched( output, sockfd);
+        pthread_mutex_unlock(&mu);
+        printf("Mutex %s unlocked\n", projectName);
         return output;
     }
     else if(commandType == 'c'){
@@ -260,28 +338,27 @@ char** readInputFromClient(int sockfd){
     }
     else{
         printf("Error: command type not recognized");
+        pthread_mutex_unlock(&mu);
+
         return NULL;
     }
+    
+
     return NULL;
 }
 
 void* threadMaker(void* arg){
-    pthread_mutex_lock(&lock);
     int sockfd = *(int*)arg;
     printf("[threadmaker: Starting thread %d\n", sockfd);
     while(readInputFromClient(sockfd) != NULL){     
     }
     printf("[threadmaker]: Finished thread %d\n", sockfd);
-    pthread_mutex_unlock(&lock);
     return NULL;
 }
+
 void testfunc(int sockfd){
     struct sockaddr_in cli; 
     int len, connfd;
-    if (pthread_mutex_init(&lock, NULL) != 0) { 
-        printf("\n mutex initialization has failed\n"); 
-        return; 
-    } 
     while(1){
         if ((listen(sockfd, 5)) != 0) { 
             printf("Listen failed...\n"); 
@@ -311,12 +388,19 @@ void testfunc(int sockfd){
         pthread_join(clientThread, NULL);
         pthread_mutex_destroy(&lock);
     }
+    close(connfd);
     return;
 }
+
+
 
 // Driver function 
 int main(int argc, char** argv) { 
     int PORT;
+    if(argc != 2){
+        printf("must provide port number as argument\n");
+        return 1;
+    }
     sscanf(argv[1], "%d", &PORT);
     int sockfd;
     struct sockaddr_in servaddr;
@@ -353,8 +437,10 @@ int main(int argc, char** argv) {
   
     // Function for chatting between client and server 
     //readInputFromClient(connfd); 
+    createMutexes();
     testfunc(sockfd);
     
     // After chatting close the socket 
     close(sockfd); 
+    destroyMutexes();
 } 
