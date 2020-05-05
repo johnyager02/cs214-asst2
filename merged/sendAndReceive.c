@@ -120,11 +120,14 @@ int writeToSock(int sockfd, char* buff){
     int numBytesWritten = 0;
     int totalNumBytesWritten = 0;
     printf("[writeToSock] Writing buffer: \"%s\"\n", buff);
+    printf("[writeToSock] str len of buffer is: %d\n", numBytesToWrite);
     do{
         numBytesWritten = write(sockfd, buff + totalNumBytesWritten, (numBytesToWrite-totalNumBytesWritten)*sizeof(char));
         printf("Numbyteswritten is: %d\n", numBytesWritten);
-        numBytesToWrite-=numBytesWritten;
-        totalNumBytesWritten+=numBytesWritten;
+        if(numBytesWritten > 0){
+            numBytesToWrite-=numBytesWritten;
+            totalNumBytesWritten+=numBytesWritten;
+        }
     }while(numBytesToWrite>0 && buff[totalNumBytesWritten]!='\0');
     if(totalNumBytesWritten == numBytesToWrite){
         return 1;
