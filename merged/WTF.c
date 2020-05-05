@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include<unistd.h>
 #define BUFFSIZE 10
 
 
@@ -72,7 +73,6 @@ char** readInputFromServer(int sockfd){
 
     //Read project length
     char* projectLengthString = getNextUnknownLen(sockfd);
-    printf("[readInputProtocol] projLenStr is: \"%s\"\n", projectLengthString);
     
     int projectLength;
     sscanf(projectLengthString, "%d", &projectLength);
@@ -81,11 +81,9 @@ char** readInputFromServer(int sockfd){
     char* projectName = mallocStr(projectLength+1);
     bzero(projectName, (projectLength+1)*sizeof(char));
     projectName = readFromSockIntoBuff(sockfd, projectName, projectLength);
-    printf("[readInputProtocol] projName is: \"%s\"\n", projectName);
 
     //Read fileName Length:
     char* fileLengthString = getNextUnknownLen(sockfd);
-    printf("[readInputProtocol] fileLenStr is: \"%s\"\n", fileLengthString);
     int fileLength;
     sscanf(fileLengthString, "%d", &fileLength);
     
@@ -93,7 +91,6 @@ char** readInputFromServer(int sockfd){
     char* fileName = mallocStr(fileLength+1);
     bzero(fileName, (fileLength+1)*sizeof(char));
     fileName = readFromSockIntoBuff(sockfd, fileName, fileLength);
-    printf("[readInputProtocol] fileName is: \"%s\"\n", fileName);
 
     //Done reading...
     printf("[readInputProtocol] Done Reading -> handling commandType cases\n");
@@ -339,9 +336,12 @@ void upgrade(char* projname, int sockfd){
 void commit(char* projname, int sockfd){
     //START SERVERSIDE:
     if(existsFile(projname) == 0){
+        printf("Project does not exist, cannot commit");
+        return;
         //fail
     }
-
+    fetchData(sockfd, projname, "./Manifest");
+    char** outputs = readInputFromServer(sockfd);
     //START CLIENTSIDE:
     //fetch server's manifest:
     int projectNameLenInt = strlen(projname);
@@ -357,11 +357,9 @@ void commit(char* projname, int sockfd){
                                                             //<s><f><projectNameLength>:<projectName><fileNameLength>:<fileName>
     sprintf(fetchClientToServerCommit, "%c%c%s:%s%s:%s", 's', 'f', projectNameLen, projname, fileNameLen, manifestPath);
 
-    
-
     char* conflictPath = appendToStr(projname, "/.Conflict");
     if(existsFile(conflictPath) == 1){
-
+        printf("Error: cannot commit because of conflicts");
     }
 
     free(conflictPath);
@@ -377,6 +375,9 @@ void push(char* projname, int sockfd){
     //char* str = "Hello";
     char* str = "ss5:proj111:proj1/test120:test1test1test1test1"; //46 bytes
     writeToSock(sockfd, str);
+    char* str12 = "sf5:proj111:proj1/test1"; //46 bytes
+    writeToSock(sockfd, str12);
+
     
     //readInputProtocol(sockfd);
 }

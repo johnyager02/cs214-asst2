@@ -61,21 +61,15 @@ char* readFromSock(int sockfd, int numBytesToRead){
         }
         //Actually read into buffer >0 bytes
         if(numBytesRead>0){
-            printf("[readFromSock] Current buffer is: \"%s\"\n", buff);
             totalReadInBytes+=numBytesRead;
-            printf("[readFromSock] NumBytesRead is: %d\n", numBytesRead);
             if(totalReadInBytes==currentBufferSize){//realloc buff
-                printf("[readFromSock] Reallocing buffer\n");
                 buff = (char*) reallocStr(buff, 2*currentBufferSize + 1);
                 currentBufferSize = 2*currentBufferSize;
-                printf("[readFromSock] Current buffer size is: %d\n", currentBufferSize);
                 memset(buff + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
             }
-            printf("[readFromSock] totalReadInBytes is: %d\n", totalReadInBytes);
         }
     }while(readFinished ==0 && d < 100);
     if(strlen(buff) != 0){ // done reading
-        printf("[readFromSock] final buffer after read is: \"%s\"\n", buff);
     }
     return buff;
 }
@@ -84,7 +78,6 @@ char* readFromSockIntoBuff(int sockfd, char* buff, int numBytesToRead){
     int numBytesRead = 0;
     int totalReadInBytes = 0;
     int currentBufferSize = numBytesToRead;
-    printf("[readFromSockIntoBuff] numBytesToRead is: %d\n", numBytesToRead);
     int readFinished = 0;
     do{
         //Read until read enough bytes in total as specified by numBytesToRead...
@@ -100,17 +93,13 @@ char* readFromSockIntoBuff(int sockfd, char* buff, int numBytesToRead){
             }
             //printf("[readFromSockIntoBuff] NumBytesRead is: %d\n", numBytesRead);
             if(totalReadInBytes==currentBufferSize){//realloc buff
-                printf("[readFromSockIntoBuff] Reallocing buffer\n");
                 buff = (char*) reallocStr(buff, 2*currentBufferSize + 1);
                 currentBufferSize = 2*currentBufferSize;
-                printf("[readFromSockIntoBuff] Current buffer size is: %d\n", currentBufferSize);
                 memset(buff + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
             }
-            printf("[readFromSockIntoBuff] totalReadInBytes is: %d\n", totalReadInBytes);
         }
     }while(readFinished ==0);
     if(strlen(buff) != 0){ // done reading
-        printf("[readFromSockIntoBuff] final buffer after read is: \"%s\" w/ total bytes: %d\n", buff, totalReadInBytes);
     }
     return buff;
 }
@@ -209,7 +198,6 @@ char* getNextUnknownLen(int sockfd){
     }while(message[totalReadInBytes]!= ':');
     //oldStr = message;
     //message = prependToStr(oldStr, firstRead);
-    printf("[readInputProtocol] Length from server: \"%s\"\n", message);
     return message;
 }
 
