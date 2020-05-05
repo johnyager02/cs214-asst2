@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         add(argv[2], argv[3]);
+        return 0;
     }
     if(compareString(command, "remove") == 0){
         if(argc != 4){
@@ -54,6 +55,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         removeEntry(argv[2], argv[3]);
+        return 0;
     }
     else{
         //attempt to open Config file

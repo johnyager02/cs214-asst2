@@ -290,19 +290,24 @@ char* handleCaseUpdateMC(char* currentClientLine, char* currentServerLine, char*
     
     //Compare stored hashes   
     if(clientFileVersionInt!=serverFileVersionInt && compareString(storedClientHash, storedServerHash) != 0 && compareString(storedClientHash, liveClientHash)==0){ // M case
-                                      //"M <filename> <serverfilehash>\n"
+                                      //"M <filename> <serverfilehash>\n" -> client has to get updated version of the file (M)
         char* lineToAppend = allocateUpdateLine('M', currentServerFileName, storedServerHash);
         return lineToAppend;
     } 
-    else if(compareString(liveClientHash, storedClientHash) != 0 && compareString(liveClientHash, storedServerHash) != 0){ // C case1 local change
-                                      //"M <filename> <serverfilehash>\n"
+    else if(compareString(liveClientHash, storedClientHash) != 0 && compareString(storedClientHash, storedServerHash) != 0){ // (C) case1 local change
+                                      //"M <filename> <serverfilehash>\n" -> client made a local change -> msut be resolved before updating
         char* lineToAppend = allocateUpdateLine('C', currentServerFileName, liveClientHash);
         return lineToAppend;
     }
-    else if(clientFileVersionInt == serverFileVersionInt && compareString(storedClientHash, storedServerHash) != 0){
+    else if(clientFileVersionInt == serverFileVersionInt && compareString(storedClientHash, storedServerHash) != 0){ // (C) case 2 same version, different hashes -> conflict 
         char* lineToAppend = allocateUpdateLine('C', currentServerFileName, liveClientHash);
         return lineToAppend;
     }
+    else if(clientFileVersionInt!= serverFileVersionInt && compareString(storedClientHash, storedServerHash) == 0){ // (C) case 3 different versions, same hashes -> conflict
+        char* lineToAppend = allocateUpdateLine('C', currentServerFileName, liveClientHash);
+        return lineToAppend;
+    }
+    return NULL;
 }
 
 void update(char* projname, int sockfd){ 
@@ -351,21 +356,25 @@ void update(char* projname, int sockfd){
     }
     
     //Manifest versions different -> search for difference 
+    char* conflictPath;
+    char* currentClientLine;
+    char* currentServerLine;
+    int conflictFound = 0;
     //First search with serverManifest
     int numLinesServerManifest = getNumLines(tempServerManifest);
     int i;
-    int conflictFound = 0;
-    char* conflictPath;
-    char* currentClientLine;
     for(i = 1;i<numLinesServerManifest;i++){ //skip proj version
-        char* currentServerLine = getLineFile(tempServerManifest, i);
+        currentServerLine = getLineFile(tempServerManifest, i);
         char* currentServerFileName = nthToken(currentServerLine, 1, ' ');
         char* currentServerFileHash = nthToken(currentServerLine, 2, ' ');
         printf("[update] currentServerFileName is: \"%s\"\n", currentServerFileName);
-        printf("[update] currentServerHashName is: \"%s\"\n", currentServerFileHash);
+        printf("[update] currentServerFileHash is: \"%s\"\n", currentServerFileHash);
         if( (currentClientLine = getFileLineManifest(manifestPath, currentServerFileName, "-ps") ) != NULL){ //server's manifest file exists on client's manifest -> Check M or C
             printf("[update] Client manifest has file: \"%s\"\n", currentServerFileName);
             char* lineToAppend = handleCaseUpdateMC(currentClientLine, currentServerLine, currentServerFileName);
+            if(lineToAppend == NULL){
+                continue;
+            }
             if(conflictFound == 0 && lineToAppend[0] == 'C'){ // first conflict -> create conflict file
                 conflictFound = 1;
                 //initialize .Conflict file
@@ -392,7 +401,29 @@ void update(char* projname, int sockfd){
         }
     }
 
+    //Second search with client manifest for files to Delete
+    int numLinesClientManifest = getNumLines(manifestPath);
+    int j;
+    for(j = 1;j<numLinesClientManifest;j++){ //skip proj version
+        currentClientLine = getLineFile(manifestPath, j);
+        char* currentClientFileName = nthToken(currentClientLine, 1, ' ');
+        char* currentClientFileHash = nthToken(currentClientLine, 2, ' ');
+        printf("[update] currentClientFileName is: \"%s\"\n", currentClientFileName);
+        printf("[update] currentClientFileHash is: \"%s\"\n", currentClientFileHash);
+        if( (currentServerLine = getFileLineManifest(tempServerManifest, currentClientFileName, "-ps") ) == NULL){ //client's manifest file exists on server's manifest -> Check M or C
+            printf("[update] Client has file: \"%s\" which is not in server's manifest\n", currentClientFileName);
+            //Format "<D> <filename> <hash>\n"
+            char* lineToAppend = allocateUpdateLine('D', currentClientFileName, currentClientFileHash);
+            addToManifest(updatePath, lineToAppend); //reuse addToManifest to append lineToAppend to .Update
+            free(lineToAppend);
+        }
+    }
 
+    if(conflictFound == 1){
+        //delete .Update file if there is a conflict
+        remove(updatePath);
+        printf("Conflicts were found for %s and must be resolved before updating!\n", projname);
+    }
     remove(tempServerManifest);
 }
 
