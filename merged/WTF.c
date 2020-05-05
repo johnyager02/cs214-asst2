@@ -310,6 +310,48 @@ char* handleCaseUpdateMC(char* currentClientLine, char* currentServerLine, char*
     return NULL;
 }
 
+void add(char* projname, char* filename, int fileversion){ // Expects projname as format: "proj0" and filename format as: "test0" && "proj0/test0"
+    if(existsDir(projname) != 1){ //Checks if project exists
+        //Failed
+        printf("[add] ERROR! This proj: \"%s\" does not exist in the client's machine\n", projname);
+        return;
+    }
+    char* manifestPath = appendToStr(projname, "/.Manifest");
+    if(getFileLineManifest(manifestPath, filename, "-ps")!=NULL){//file already in manifest
+        printf("[add] ERROR! This file: \"%s\" already exists in the Manifest\n", filename);
+        return;
+    } 
+    //File exists and is not already in manifest -> append to .Manifest
+    printf("[add] Adding file: \"%s\" to the manifest of project: \"%s\"\n", filename, projname);
+    char* lineToAdd = getLineToAdd(fileversion, filename);
+    addToManifest(manifestPath, lineToAdd);
+}
+
+void removeEntry(char* projname, char* filename){ // Expects projname as format: "proj0" and filename format as: "test0" && "proj0/test0"
+    if(existsDir(projname) != 1){ //Checks if project exists
+        //Failed
+        printf("[removeEntry] ERROR! This proj: \"%s\" does not exist in the client's machine\n", projname);
+        return;
+    }
+    char* manifestPath = appendToStr(projname, "/.Manifest");
+    char* lineNumStr = getFileLineManifest(manifestPath, filename, "-pi");
+    int lineNumToDelete;
+    if(lineNumStr == NULL){
+        lineNumToDelete = -1;
+    }
+    else{
+        lineNumToDelete;
+        sscanf(lineNumStr, "%d", &lineNumToDelete);
+    }
+    if(lineNumToDelete == -1){//file to be deleted is NOT in manifest
+        printf("[removeEntry] ERROR! This file: \"%s\" does NOT exist in the Manifest\n", filename);
+        return;
+    } 
+    //File exists and is in the manifest -> delete entry
+    printf("[removeEntry] Deleting file: \"%s\" from the manifest of project: \"%s\"\n", filename, projname);
+    removeLine(manifestPath, lineNumToDelete);
+}
+
 void update(char* projname, int sockfd){ 
     //Fetch server's manifest
     char* manifestPath = appendToStr(projname, "/.Manifest");
@@ -428,7 +470,99 @@ void update(char* projname, int sockfd){
 }
 
 void upgrade(char* projname, int sockfd){
+    //Error checking 
+    //1) No .Update on clientside
+    char* updatePath = appendToStr(projname, "/.Update");
+    char* conflictPath = appendToStr(projname, "/.Conflict");
+    char* manifestPath = appendToStr(projname, "/.Manifest");
+    if(existsFile(updatePath) != 1){
+        printf("An update must be run before upgrading %s\n", projname);
+        return;
+    }
+    else if(existsFile(updatePath) == 1 && isEmptyFile(updatePath) == 1){
+        printf("Project %s is up to date\n");
+        remove(updatePath);
+        return;
+    }
+    //2) .Conflict file exists
+    if(existsFile(conflictPath) == 1){
+        printf("All conflicts must first be resolved and an update run on %s before upgrading\n", projname);
+    }
 
+    //fetch server's .Manifest to do file version updates ->
+    fetchData(sockfd, projname, manifestPath);
+    char** output = readInputFromServer(sockfd);
+    //receive manifest into char** output output[0] == status, output[1] == commandType, output[2] == projName, output[3] = fileName, output[4] = filedata; 
+    if(output == NULL){
+        printf("[upgrade] Failed!\n");
+        //close(sockfd);
+        return;
+    }
+    if(output[0][0] == 'f'){
+        printf("[upgrade] Failed!\n");
+        //close(sockfd);
+        return;
+    }
+    char* serverFileData = output[4];
+    printf("[upgrade] serverManifest is: \"%s\"\n", serverFileData);
+
+    //Initiate temp server manifest
+    char* tempServerManifest = appendToStr(projname, "/.serverManifest");
+    createNewFile(tempServerManifest);
+    overwriteOrCreateFile(tempServerManifest, serverFileData);
+
+    //handle non-empty .Update file
+    int numLinesUpdate = getNumLines(updatePath);
+    int i;
+    char* currentUpdateLine;
+    char* currentFileName;
+    char* currentFileHash;
+    char* currentServerFileLine;
+    char* currentServerFileVersionStr;
+    int currentServerFileVersion;
+    char** fetchedFile;
+    for(i = 0; i<numLinesUpdate;i++){
+        currentUpdateLine = getLineFile(updatePath, i);
+        currentFileName = nthToken(currentUpdateLine, 1, ' ');
+        currentFileHash = nthToken(currentUpdateLine, 2, ' ');
+        if(currentUpdateLine[0] == 'D'){
+            //handle 'D' -> delete all files with this tag from client manifest
+            printf("[upgrade] Removing entry for file: \"%s\" from client manifest\n", currentFileName);
+            removeEntry(projname, currentFileName);
+        }
+        else if(currentUpdateLine[0] == 'A' || currentUpdateLine[0] == 'M'){
+            //handle 'A' or 'M'-> fetch file from server manifest -> add to local proj directory -> add entry for file to client's manifest
+            fetchData(sockfd, projname, currentFileName);
+            fetchedFile = readInputFromServer(sockfd);
+            if(fetchedFile == NULL){
+                printf("[upgrade] Failed to fetch file \"%s\"!\n", currentFileName);
+                return;
+            }  
+            if(fetchedFile[0][0] == 'f'){
+                printf("[upgrade] Failed to fetch file \"%s\"!\n", currentFileName);
+                return;
+            }
+            //fetched currentfile -> add to local proj
+            createNewFile(currentFileName);
+            overwriteOrCreateFile(currentFileName, fetchedFile[4]);
+            //get fileversion from server manifest
+            currentServerFileLine = getFileLineManifest(tempServerManifest, currentFileName, "-ps");
+            currentServerFileVersionStr = nthToken(currentServerFileLine, 0, ' ');
+            sscanf(currentServerFileVersionStr, "%d", &currentServerFileVersion);
+            if(currentUpdateLine[0] == 'M'){ //delete old entry (M)
+                printf("[upgrade] Removing old entry for file: \"%s\" from client manifest\n", currentFileName);
+                removeEntry(projname, currentFileName);
+            }
+            //add entry of file w/ updated version to client's manifest
+            add(projname, currentFileName, currentServerFileVersion);
+        }
+    }
+    //update project version
+    char* serverProjLine = getLineFile(tempServerManifest, 0);
+    setLineFile(manifestPath, 0, serverProjLine);
+    //Done processing->client manifest and proj directory should be up to date
+    remove(tempServerManifest);
+    printf("[upgrade] upgrade for proj \"%s\" was successful\n", projname);
 }
 
 void commit(char* projname, int sockfd){
@@ -523,48 +657,6 @@ void destroy(char* projname, int sockfd){
     } else if(output[0][0] == 's'){
         printf("[destroy] Successfully destroyed project: \"%s\"!\n", projname);
     }
-}
-
-void add(char* projname, char* filename){ // Expects projname as format: "proj0" and filename format as: "test0" && "proj0/test0"
-    if(existsDir(projname) != 1){ //Checks if project exists
-        //Failed
-        printf("[add] ERROR! This proj: \"%s\" does not exist in the client's machine\n", projname);
-        return;
-    }
-    char* manifestPath = appendToStr(projname, "/.Manifest");
-    if(getFileLineManifest(manifestPath, filename, "-ps")!=NULL){//file already in manifest
-        printf("[add] ERROR! This file: \"%s\" already exists in the Manifest\n", filename);
-        return;
-    } 
-    //File exists and is not already in manifest -> append to .Manifest
-    printf("[add] Adding file: \"%s\" to the manifest of project: \"%s\"\n", filename, projname);
-    char* lineToAdd = getLineToAdd(0, filename);
-    addToManifest(manifestPath, lineToAdd);
-}
-
-void removeEntry(char* projname, char* filename){ // Expects projname as format: "proj0" and filename format as: "test0" && "proj0/test0"
-    if(existsDir(projname) != 1){ //Checks if project exists
-        //Failed
-        printf("[removeEntry] ERROR! This proj: \"%s\" does not exist in the client's machine\n", projname);
-        return;
-    }
-    char* manifestPath = appendToStr(projname, "/.Manifest");
-    char* lineNumStr = getFileLineManifest(manifestPath, filename, "-pi");
-    int lineNumToDelete;
-    if(lineNumStr == NULL){
-        lineNumToDelete = -1;
-    }
-    else{
-        lineNumToDelete;
-        sscanf(lineNumStr, "%d", &lineNumToDelete);
-    }
-    if(lineNumToDelete == -1){//file to be deleted is NOT in manifest
-        printf("[removeEntry] ERROR! This file: \"%s\" does NOT exist in the Manifest\n", filename);
-        return;
-    } 
-    //File exists and is in the manifest -> delete entry
-    printf("[removeEntry] Deleting file: \"%s\" from the manifest of project: \"%s\"\n", filename, projname);
-    removeLine(manifestPath, lineNumToDelete);
 }
 
 void currentversion(char* projname, int sockfd){

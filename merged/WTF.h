@@ -10,7 +10,7 @@ void commit(char* , int);
 void push(char* , int);
 void create(char* , int);
 void destroy(char* , int);
-void add(char* , char* );
+void add(char* , char* , int);
 void removeEntry(char* , char* );
 void currentversion(char*, int );
 void history(char* , int);

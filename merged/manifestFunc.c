@@ -396,20 +396,20 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
             exit(EXIT_FAILURE);
         }
         else if(numBytesRead == 0 && totalReadInBytes == 0){ // empty file
-            printf("Empty file!\n");
+            //printf("Empty file!\n");
             return NULL;
         }
         else if(numBytesRead == 1){
             char lastCharRead = finalLine[totalReadInBytes-1];
             if(lastCharRead == '\n'){ // got newLine, compare hash
                 char* currentLine = finalLine;
-                printf("[getFileLineManifest] current Buffer is: %s\n", currentLine);
+                //printf("[getFileLineManifest] current Buffer is: %s\n", currentLine);
 
                 if(compareString(searchFlag, "-ps") == 0){
-                    printf("[getFileLineManifest] targetStr is: \"%s\"\n", filepath);
+                   // printf("[getFileLineManifest] targetStr is: \"%s\"\n", filepath);
                     char* currentFileStr = getFilePathStrLine(currentLine);
                     if(currentFileStr!=NULL){
-                        printf("[getFileLineManifest] currentFileStr is: \"%s\"\n", currentFileStr);
+                        //printf("[getFileLineManifest] currentFileStr is: \"%s\"\n", currentFileStr);
                         if(compareString(filepath, currentFileStr) == 0){
                             printf("[getFileLineManifest] Found filepath! Returning line: \"%s\"\n", currentLine);
                             return currentLine;
@@ -417,10 +417,10 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                     }
                 }
                 else if(compareString(searchFlag, "-pi") == 0){
-                    printf("[getFileLineManifest] targetStr is: \"%s\"\n", filepath);
+                    //printf("[getFileLineManifest] targetStr is: \"%s\"\n", filepath);
                     char* currentFileStr = getFilePathStrLine(currentLine);
                     if(currentFileStr!=NULL){
-                        printf("[getFileLineManifest] currentFileStr is: \"%s\"\n", currentFileStr);
+                        //printf("[getFileLineManifest] currentFileStr is: \"%s\"\n", currentFileStr);
                         if(compareString(filepath, currentFileStr) == 0){
                             printf("[getFileLineManifest] Found filepath! Returning lineNum: \"%d\"\n", linesRead+1);
                             return numToStr(linesRead);
@@ -430,10 +430,10 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                 else if(compareString(searchFlag, "-hs") == 0){
                     char* filehash = getHash(filepath);
                     targetHashStr = hashToStr(filehash);
-                    printf("[getFileLineManifest] targetHash is: \"%s\"\n", targetHashStr);
+                    //printf("[getFileLineManifest] targetHash is: \"%s\"\n", targetHashStr);
                     currentHashStr = getHashStrLine(currentLine);
                     if(currentHashStr!= NULL){ //File hash found in currentLine -> compareHashes
-                        printf("[getFileLineManifest] currentHashStr is: \"%s\"\n", currentHashStr);
+                        //printf("[getFileLineManifest] currentHashStr is: \"%s\"\n", currentHashStr);
                         if(compareString(targetHashStr, currentHashStr) == 0){
                             printf("[getFileLineManifest] Found hash! Returning line: \"%s\"\n", currentLine);
                             return currentLine;
@@ -443,10 +443,10 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                 else if(compareString(searchFlag, "-hi") == 0){
                     char* filehash = getHash(filepath);
                     targetHashStr = hashToStr(filehash);
-                    printf("[getFileLineManifest] targetHash is: \"%s\"\n", targetHashStr);
+                    //printf("[getFileLineManifest] targetHash is: \"%s\"\n", targetHashStr);
                     currentHashStr = getHashStrLine(currentLine);
                     if(currentHashStr!= NULL){ //File hash found in currentLine -> compareHashes
-                        printf("[getFileLineManifest] currentHashStr is: \"%s\"\n", currentHashStr);
+                        //printf("[getFileLineManifest] currentHashStr is: \"%s\"\n", currentHashStr);
                         if(compareString(targetHashStr, currentHashStr) == 0){
                             printf("[getFileLineManifest] Found hash! Returning lineNum: \"%d\"\n", linesRead+1);
                             return numToStr(linesRead);
@@ -507,9 +507,9 @@ void setLineFile(char* filepath, int lineNum, char* newline){
     int skippedUnwantedLine = 0;
     //Copy everything before line to change into buffer
     do{
-        if(lineNum == 0){
-            break;
-        }
+        // if(lineNum == 0){
+        //     break;
+        // }
         //printf("[setLineFile] Current Buffer size is: %d\n", currentBufferSize);
         numBytesRead = read(file, strToWrite+ indexOfCopy, 1*sizeof(char));
         totalReadInBytes+=numBytesRead;
@@ -554,16 +554,22 @@ void setLineFile(char* filepath, int lineNum, char* newline){
     } while(numBytesRead != 0);
     printf("[setLineFile] Total bytes read is: %d\n", totalReadInBytes);
     printf("[setLineFile] poststrToWrite  is: \"%s\"\n", strToWrite);
-    //linesRead == lineNum -> append to buffer newline;
-    char* oldStr1 = strToWriteFinal;
-    strToWriteFinal = appendToStr(strToWriteFinal, newline);
-    free(oldStr1);
-    char* oldStr = strToWriteFinal;
-    strToWriteFinal = appendToStr(oldStr, strToWrite);
-    free(oldStr);
-    printf("[setLineFile] strToWriteFinal after appending  is: \"%s\"\n", strToWriteFinal);
+    if(lineNum == 0){
+        //char* old = strToWrite;
+        strToWriteFinal = prependToStr(strToWrite, newline);
+        //free(old);
+    } 
+    else{
+        //linesRead == lineNum -> append to buffer newline;
+        char* oldStr1 = strToWriteFinal;
+        strToWriteFinal = appendToStr(strToWriteFinal, newline);
+        free(oldStr1);
+        char* oldStr = strToWriteFinal;
+        strToWriteFinal = appendToStr(oldStr, strToWrite);
+        free(oldStr);
+        printf("[setLineFile] strToWriteFinal after appending  is: \"%s\"\n", strToWriteFinal);    
+    }
     
-   
     close(file);
     printf("[setLineFile] strToWriteFinal is: \"%s\"\n", strToWriteFinal);
 
