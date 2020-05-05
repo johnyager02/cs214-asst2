@@ -152,6 +152,20 @@ int isEmptyDir(char* dirpath){
     return 0;
 }
 
+int isEmptyFile(char* filepath){
+    int numBytesRead = 0;
+    int totalReadinBytes = 0;
+    char buffer[2];
+    bzero(buffer, 2*sizeof(char));
+    while((numBytesRead = read(filepath, buffer, 1*sizeof(char)) != 0)){
+        totalReadinBytes+= numBytesRead;
+        if(totalReadinBytes > 0){
+            return 0;
+        }
+    }
+    return 1;
+}
+
 void recursiveMakeSubDir(char* filepath){
     if(existsDir(filepath) == 1){
         return;

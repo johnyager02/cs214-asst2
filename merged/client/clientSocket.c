@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
             printf("Error: add takes Project Name and File Name as arguments");
             return 1;
         }
-        add(argv[2], argv[3]);
+        add(argv[2], argv[3], 0);
         return 0;
     }
     if(compareString(command, "remove") == 0){

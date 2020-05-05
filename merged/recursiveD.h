@@ -10,5 +10,6 @@ void createNewFile(char* );
 void recursiveMakeSubDir(char*);
 int existsFile(char*);
 int existsDir(char* );
+int isEmptyFile(char*);
 
 #endif
