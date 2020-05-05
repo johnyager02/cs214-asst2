@@ -13,8 +13,10 @@
 #include "../sendAndReceive.h"
 #include<signal.h>
 #include "../manifestFunc.h"
+#include<pthread.h>
 #define BUFFSIZE 10 
 #define SA struct sockaddr 
+pthread_mutex_t lock;
 
 
 void handleClientFetched(char** output, int clientSockFd){
@@ -158,7 +160,9 @@ void handleClientSentCommand(char** output, int clientSockFd){
 char** readInputFromClient(int sockfd){
     //Want to read <s/f><s/f/c><projLen>:<projName><fileLen>:<fileName> or for send:<s/f><s/f/c><projLen>:<projName><fileLen>:<fileName><dataLen>:<data>
     //Read successflag and commandType
+    printf("Start read\n");
     char* firstRead = readFromSock(sockfd, 2*sizeof(char));
+    printf("firstRead %s\n", firstRead);
     if(firstRead==NULL){
         //Failed
         printf("[readInputProtocol] Error: firstRead NULL\n");
@@ -248,12 +252,26 @@ char** readInputFromClient(int sockfd){
         printf("Error: command type not recognized");
         return NULL;
     }
-    //return NULL;
+    return NULL;
 }
 
+void* threadMaker(void* arg){
+    pthread_mutex_lock(&lock);
+    int sockfd = *(int*)arg;
+    printf("[threadmaker: Starting thread %d\n", sockfd);
+    while(readInputFromClient(sockfd) != NULL){     
+    }
+    printf("[threadmaker]: Finished thread %d\n", sockfd);
+    pthread_mutex_unlock(&lock);
+    return NULL;
+}
 void testfunc(int sockfd){
     struct sockaddr_in cli; 
     int len, connfd;
+    if (pthread_mutex_init(&lock, NULL) != 0) { 
+        printf("\n mutex initialization has failed\n"); 
+        return; 
+    } 
     while(1){
         if ((listen(sockfd, 5)) != 0) { 
             printf("Listen failed...\n"); 
@@ -271,18 +289,23 @@ void testfunc(int sockfd){
         } 
         else
             printf("server acccept the client...\n"); 
-
-        //printf("[func] Done reading input\n");
-        if(readInputFromClient(connfd) == NULL){
-            break;
+        
+        pthread_t clientThread;
+        int* fd = malloc(sizeof(int));
+        *fd = connfd;
+        int e = pthread_create(&clientThread, NULL, threadMaker, (void*)fd);
+        if(e != 0){
+            perror("Create thread");
+            return;
         }
-
+        pthread_join(clientThread, NULL);
+        pthread_mutex_destroy(&lock);
     }
+    return;
 }
 
 // Driver function 
-int main(int argc, char** argv) 
-{ 
+int main(int argc, char** argv) { 
     int PORT;
     sscanf(argv[1], "%d", &PORT);
     int sockfd;

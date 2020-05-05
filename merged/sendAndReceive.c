@@ -48,9 +48,12 @@ char* readFromSock(int sockfd, int numBytesToRead){
     int totalReadInBytes = 0;
     int currentBufferSize = numBytesToRead;
     int readFinished = 0;
+    int d = 0;
     do{
+        d++;
         //Read until read enough bytes in total as specified by numBytesToRead...
         numBytesRead = read(sockfd, buff + totalReadInBytes, (numBytesToRead-totalReadInBytes)*sizeof(char));
+
         //Read enough ->stop reading
         if(totalReadInBytes == numBytesToRead){
             readFinished = 1;
@@ -70,7 +73,7 @@ char* readFromSock(int sockfd, int numBytesToRead){
             }
             printf("[readFromSock] totalReadInBytes is: %d\n", totalReadInBytes);
         }
-    }while(readFinished ==0);
+    }while(readFinished ==0 && d < 100);
     if(strlen(buff) != 0){ // done reading
         printf("[readFromSock] final buffer after read is: \"%s\"\n", buff);
     }

@@ -132,6 +132,7 @@ int parseInput(int sockfd, int argc, char** argv){
         }
     }
     if(compareString(command, "commit") == 0){
+        printf("commit\n");
         if(argc != 3){
             printf("Error: commit takes Project Name as only argument");
             return -1;

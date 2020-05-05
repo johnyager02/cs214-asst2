@@ -1,7 +1,7 @@
 all:	main.c recursiveD.o stringFunc.o manifestFunc.o WTF.o sendAndReceive.o ./client/clientSocket.c ./server/serverSocket.c
-	gcc -g main.c -o main recursiveD.o stringFunc.o manifestFunc.o WTF.o sendAndReceive.o -lssl -lcrypto;
-	gcc -g ./client/clientSocket.c -o ./client/WTF WTF.o recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto
-	gcc -g ./server/serverSocket.c -o ./server/WTFserver recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto
+	gcc -g main.c -o main recursiveD.o stringFunc.o manifestFunc.o WTF.o sendAndReceive.o -lssl -lcrypto -lpthread;
+	gcc -g ./client/clientSocket.c -o ./client/WTF WTF.o recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto -lpthread
+	gcc -g ./server/serverSocket.c -o ./server/WTFserver recursiveD.o stringFunc.o manifestFunc.o sendAndReceive.o -lssl -lcrypto -lpthread
 
 recursiveD.o:	recursiveD.c stringFunc.o manifestFunc.o
 	gcc -c recursiveD.c
