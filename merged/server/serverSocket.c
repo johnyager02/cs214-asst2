@@ -164,14 +164,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
 
         //send history
         printf("[handleClientSentCommand] Client sent command to send history of project: \"%s\"\n", projName);
-        char** commitOuput = (char**) readInputFromClient(clientSockFd);
-        char* commitPath = appendToStr(projName, "/.Commit");
-        char* oldstr = commitPath;
-        createNewFile(commitPath);
-        commitPath = appendToStr(oldstr, hashToStr(getHash(commitPath)));
         
-        //saving commit
-        overwriteOrCreateFile(commitPath, commitOuput[4]);
     }
     else if(compareString(commandName, "rollback") == 0){
         /*The rollback command will fail if the project name doesn’t exist on the server or the version number given is invalid. 

@@ -861,9 +861,7 @@ void currentversion(char* projname, int sockfd){
 }
 
 void history(char* projname, int sockfd){
-    char* commitPath = appendToStr(projname, "/.Commit");
-    sendCommand(sockfd, projname, "history");
-    sendData(sockfd, projname, commitPath);
+    
 }
 
 void rollback(char* projname, int version, int sockfd){
