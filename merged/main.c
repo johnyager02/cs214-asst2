@@ -196,8 +196,8 @@ int main(int argc, char** argv){
     // overwriteOrCreateFile("server/proj1/test0", "test0succeeded");
     // overwriteOrCreateFile("server/proj1/test1", "test1succeeded");
     // overwriteOrCreateFile("server/proj1/test2", "test2succeeded");
-    //   recursiveDelete("client/proj1/");
-    //   rmdir("client/proj1/");
+    //    recursiveDelete("client/proj1/");
+    //    rmdir("client/proj1/");
     //   recursiveDelete("proj1/");
     //   rmdir("proj1/");
     //checkout("proj1", 11);
@@ -206,6 +206,12 @@ int main(int argc, char** argv){
     //Resetting test files:
     //remove("proj1/.Update");
     //update("proj1", 11);
+
+    //Test sending commit():
+    //Setting up commit
+    // char* commitPath = "proj1/.Commit";
+    // sendCommand(sockfd, "proj1", "commit");
+    // sendData(sockfd, "proj1", commitPath);
 
     return 0;
 }

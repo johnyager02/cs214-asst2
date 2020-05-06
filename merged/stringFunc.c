@@ -99,3 +99,9 @@ char* trimEndToDelim(char* str, char delimiter){ // given "proj0/sub1/sub2/file1
 	}
 	return NULL;
 }
+
+int strToNum(char* str){
+	int result;
+	sscanf(str, "%d", &result);
+	return result;
+}
