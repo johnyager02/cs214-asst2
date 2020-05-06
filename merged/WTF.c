@@ -257,6 +257,15 @@ project, creating any subdirectories under the project and putting all files in 
     // overwriteOrCreateFile("proj1/test2", testServerFile3);
 }
 
+char* allocateCommitLine(char updateChar, char* filename, char* hash, int newVersion){
+    char* newVersionStr = numToStr(newVersion);
+    char* lineToAppend = mallocStr(1 + 1 + strlen(filename) + 1 + strlen(hash) + 1 + strlen(newVersionStr) + 1 + 1);
+    bzero(lineToAppend, (1 + 1 + strlen(filename) + 1 + strlen(hash) + 1 + strlen(newVersionStr) + 1 + 1)*sizeof(char));
+    sprintf(lineToAppend, "%c %s %s %s\n", updateChar, filename, hash, newVersionStr);
+    printf("[allocateCommitLine] %c-final string to append is: \"%s\"\n", updateChar, lineToAppend);
+    return lineToAppend;
+}
+
 char* allocateUpdateLine(char updateChar, char* filename, char* hash){
     char* lineToAppend = mallocStr(1 + 1 + strlen(filename) + 1 + strlen(hash) + 1 + 1);
     bzero(lineToAppend, (1 + 1 + strlen(filename) + 1 + strlen(hash) + 1 + 1)*sizeof(char));
@@ -565,49 +574,172 @@ void upgrade(char* projname, int sockfd){
     printf("[upgrade] upgrade for proj \"%s\" was successful\n", projname);
 }
 
+
 void commit(char* projname, int sockfd){
-    //START SERVERSIDE:
-    if(existsFile(projname) == 0){
-        //fail
-    }
 
-    //START CLIENTSIDE:
-    //fetch server's manifest:
-    int projectNameLenInt = strlen(projname);
-    char* projectNameLen = numToStr(projectNameLenInt);
-    
     char* manifestPath = appendToStr(projname, "/.Manifest");
-    int fileNameLenInt = strlen(manifestPath);
-    char* fileNameLen = numToStr(fileNameLenInt);
-    
-    int totalBufferSize = 2 + strlen(projectNameLen) + 1 + strlen(projname) + strlen(fileNameLen) + 1 + strlen(manifestPath);
-    char* fetchClientToServerCommit = (char*) mallocStr(totalBufferSize + 1);
-    memset(fetchClientToServerCommit, '\0', (totalBufferSize+1)*sizeof(char));
-                                                            //<s><f><projectNameLength>:<projectName><fileNameLength>:<fileName>
-    sprintf(fetchClientToServerCommit, "%c%c%s:%s%s:%s", 's', 'f', projectNameLen, projname, fileNameLen, manifestPath);
-
-    
-
+    char* updatePath = appendToStr(projname, "/.Update");
     char* conflictPath = appendToStr(projname, "/.Conflict");
-    if(existsFile(conflictPath) == 1){
 
+    //Error checking:
+    //1) non-empty update ->
+    if(existsFile(updatePath) == 1 && isEmptyFile(updatePath) != 1){
+        printf("[commit] Failed to commit...non-empty .Update exists\n");
+    }
+    if(existsFile(conflictPath) == 1){
+        printf("[commit] Failed to commit... .Conflict file exists\n");
     }
 
+    //fetch server's manifest:
+    fetchData(sockfd, projname, manifestPath);
+    char** output = readInputFromServer(sockfd);
+    //receive manifest into char** output output[0] == status, output[1] == commandType, output[2] == projName, output[3] = fileName, output[4] = filedata; 
+    if(output == NULL){
+        printf("[commit] Failed!\n");
+        free(manifestPath);
+        free(updatePath);
+        free(conflictPath);
+        return;
+    }
+    if(output[0][0] == 'f'){
+        printf("[commit] Failed!\n");
+        free(manifestPath);
+        free(updatePath);
+        free(conflictPath);
+        return;
+    }
+    char* serverFileData = output[4];
+    printf("[commit] serverManifest is: \"%s\"\n", serverFileData);
+
+    //Initiate temp server manifest
+    char* tempServerManifest = appendToStr(projname, "/.serverManifest");
+    createNewFile(tempServerManifest);
+    overwriteOrCreateFile(tempServerManifest, serverFileData);
+
+    //Create empty .Commit file
+    char* commitPath = appendToStr(projname, "/.Commit");
+    createNewFile(commitPath);
+    open(commitPath, O_RDONLY|O_TRUNC, 00644);
+
+    //Check manifest versions:
+    char* serverManifestVersion = getLineFile(tempServerManifest, 0);
+    char* clientManifestVersion = getLineFile(tempServerManifest, 0);
+    if(compareString(serverManifestVersion, clientManifestVersion) != 0){ //different project versions -> need to update local project first
+        printf("User must update project %s before committing\n");
+        free(manifestPath);
+        free(updatePath);
+        free(conflictPath);
+        remove(tempServerManifest);
+        return;
+    }
+
+    //same manifest versions -> go through manifests
+    int numLinesClientManifest = getNumLines(manifestPath);
+    int numLinesServerManifest = getNumLines(tempServerManifest);
+    char* currentClientLine;
+    char* currentClientFileName;
+    char* currentServerLine;
+    char* currentServerFileName;
+    //char* currentClientFileHash;
+    char* storedClientHash;
+    char* storedServerHash;
+    char* liveClientHash;
+    char* clientFileVersion;
+    char* serverFileVersion;
+    int clientFileVersionInt;
+    int serverFileVersionInt;
+    int failCommit = 0;
+    char* lineToAppend;
+    //first loop through client manifest handling cases:
+    int i;
+    for(i =1; i<numLinesClientManifest;i++){
+        currentClientLine = getLineFile(manifestPath, i);
+        currentClientFileName = nthToken(currentClientLine, 1, ' ');
+        storedClientHash = nthToken(currentClientLine, 2, ' ');
+        clientFileVersion = nthToken(currentClientLine, 0, ' ');
+        sscanf(clientFileVersion, "%d", &clientFileVersionInt);
+        if(( currentServerLine = getFileLineManifest(tempServerManifest, currentClientFileName, "-ps")) !=NULL){ // file in client's manifest exists in server's manifest
+            storedServerHash = nthToken(currentServerLine, 2, ' ');
+            liveClientHash = hashToStr(getHash(currentClientFileName));
+            serverFileVersion = nthToken(currentServerLine, 0, ' ');
+            sscanf(serverFileVersion, "%d", &serverFileVersionInt);
+            if(compareString(storedClientHash, storedServerHash) == 0 && compareString(storedClientHash, liveClientHash) != 0){ //(M case)
+                lineToAppend = allocateCommitLine('M', currentClientFileName, liveClientHash, clientFileVersionInt++);
+                if(lineToAppend!=NULL){
+                    //append to commit
+                    addToManifest(commitPath, lineToAppend);
+                }
+            }
+            else if(compareString(storedClientHash, storedServerHash) != 0 && (serverFileVersionInt >= clientFileVersionInt)){ // Fail -> must sync repository
+                failCommit = 1;
+                break;
+            }
+        } 
+        else{ // file in client's manifest does NOT exist in the server's manifest -> 
+            lineToAppend = allocateCommitLine('A', currentClientFileName, liveClientHash, clientFileVersionInt++);
+            if(lineToAppend!=NULL){
+                //append to commit
+                addToManifest(commitPath, lineToAppend);
+            }
+        }
+    }
+
+    int j;
+    for(j =1; j<numLinesClientManifest;j++){
+        currentServerLine = getLineFile(tempServerManifest, j);
+        currentServerFileName = nthToken(currentServerLine, 1, ' ');
+        storedServerHash = nthToken(currentServerLine, 2, ' ');
+        serverFileVersion = nthToken(currentServerLine, 0, ' ');
+        sscanf(serverFileVersion, "%d", &serverFileVersionInt);
+        if(( currentClientLine = getFileLineManifest(manifestPath, currentServerFileName, "-ps")) ==NULL){ // file in server's manifest exists in client's manifest
+            if(compareString(storedClientHash, storedServerHash) == 0 && compareString(storedClientHash, liveClientHash) != 0){ //(M case)
+                lineToAppend = allocateCommitLine('D', currentServerFileName, storedServerHash, serverFileVersionInt++);
+                if(lineToAppend!=NULL){
+                    //append to commit
+                    addToManifest(commitPath, lineToAppend);
+                }
+            }
+        } 
+    }
+
+    if(failCommit == 1){
+        printf("User must sync with the repository before committing changes\n");
+        remove(commitPath);
+        remove(tempServerManifest);
+        free(commitPath);
+        free(manifestPath);
+        free(updatePath);
+        free(conflictPath);
+        free(tempServerManifest);
+        return;
+    }
+    remove(tempServerManifest);
+    free(commitPath);
+    free(manifestPath);
+    free(updatePath);
     free(conflictPath);
+    free(tempServerManifest);
+    printf("[commit] Commit was successful for \"%s\"\n", projname);
     return;
 }
 
 void push(char* projname, int sockfd){
-    //char buff[10];
-    //sendData(sockfd, "myProject", "filename");
-    printf("pushing\n");
-    
-    //char* str = "sc5:proj18:testfile";
-    //char* str = "Hello";
-    char* str = "ss5:proj111:proj1/test120:test1test1test1test1"; //46 bytes
-    writeToSock(sockfd, str);
-    
-    //readInputProtocol(sockfd);
+   char* manifestPath = appendToStr(projname, "/.Manifest");
+   char* updatePath = appendToStr(projname, "/.Update");
+   char* commitPath = appendToStr(projname, "/.Commit");
+   if(existsFile(commitPath) != 1){
+       printf("[Push] failed to push project \"%s\"\n", projname);
+       return;
+   }
+
+   //There is stuff to commit
+   
+   //Update client manifest and hashes
+   int i;
+   int numLinesCommit = getNumLines(commitPath);
+   for(i=0;i<numLinesCommit;i++){
+
+   }
 }
 
 void create(char* projname, int sockfd){
