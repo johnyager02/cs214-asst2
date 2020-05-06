@@ -116,7 +116,9 @@ char** readInputFromServer(int sockfd){
     else if(commandType == 'f'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleFetch
-        //return  (char**) getOutputArrFetched(success, commandType, projectName, fileName);
+        char** output = (char**) getOutputArrFetched(success, commandType, projectName, fileName);
+        handleServerFetched(output, sockfd);
+        return output;
     }
     else if(commandType == 'c'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
@@ -659,7 +661,8 @@ void commit(char* projname, int sockfd){
             serverFileVersion = nthToken(currentServerLine, 0, ' ');
             sscanf(serverFileVersion, "%d", &serverFileVersionInt);
             if(compareString(storedClientHash, storedServerHash) == 0 && compareString(storedClientHash, liveClientHash) != 0){ //(M case)
-                lineToAppend = allocateCommitLine('M', currentClientFileName, liveClientHash, clientFileVersionInt++);
+                int replaceVersion = clientFileVersionInt + 1;
+                lineToAppend = allocateCommitLine('M', currentClientFileName, liveClientHash, replaceVersion);
                 if(lineToAppend!=NULL){
                     //append to commit
                     addToManifest(commitPath, lineToAppend);
@@ -671,7 +674,8 @@ void commit(char* projname, int sockfd){
             }
         } 
         else{ // file in client's manifest does NOT exist in the server's manifest -> 
-            lineToAppend = allocateCommitLine('A', currentClientFileName, liveClientHash, clientFileVersionInt++);
+            int replaceVersion = clientFileVersionInt + 1;
+            lineToAppend = allocateCommitLine('A', currentClientFileName, liveClientHash, replaceVersion);
             if(lineToAppend!=NULL){
                 //append to commit
                 addToManifest(commitPath, lineToAppend);
@@ -680,19 +684,18 @@ void commit(char* projname, int sockfd){
     }
 
     int j;
-    for(j =1; j<numLinesClientManifest;j++){
+    for(j =1; j<numLinesServerManifest;j++){
         currentServerLine = getLineFile(tempServerManifest, j);
         currentServerFileName = nthToken(currentServerLine, 1, ' ');
         storedServerHash = nthToken(currentServerLine, 2, ' ');
         serverFileVersion = nthToken(currentServerLine, 0, ' ');
         sscanf(serverFileVersion, "%d", &serverFileVersionInt);
-        if(( currentClientLine = getFileLineManifest(manifestPath, currentServerFileName, "-ps")) ==NULL){ // file in server's manifest exists in client's manifest
-            if(compareString(storedClientHash, storedServerHash) == 0 && compareString(storedClientHash, liveClientHash) != 0){ //(M case)
-                lineToAppend = allocateCommitLine('D', currentServerFileName, storedServerHash, serverFileVersionInt++);
-                if(lineToAppend!=NULL){
-                    //append to commit
-                    addToManifest(commitPath, lineToAppend);
-                }
+        if(( currentClientLine = getFileLineManifest(manifestPath, currentServerFileName, "-ps")) ==NULL){ // file in server's manifest does NOT exist in client's manifest
+            int replaceVersion = serverFileVersionInt + 1;
+            lineToAppend = allocateCommitLine('D', currentServerFileName, storedServerHash, replaceVersion);
+            if(lineToAppend!=NULL){
+                //append to commit
+                addToManifest(commitPath, lineToAppend);
             }
         } 
     }
@@ -708,6 +711,9 @@ void commit(char* projname, int sockfd){
         free(tempServerManifest);
         return;
     }
+    //Send commit
+    sendCommand(sockfd, projname, "commit");
+    sendData(sockfd, projname, commitPath);
     remove(tempServerManifest);
     free(commitPath);
     free(manifestPath);
@@ -720,21 +726,50 @@ void commit(char* projname, int sockfd){
 
 void push(char* projname, int sockfd){
     char* manifestPath = appendToStr(projname, "/.Manifest");
-   char* updatePath = appendToStr(projname, "/.Update");
-   char* commitPath = appendToStr(projname, "/.Commit");
-   if(existsFile(commitPath) != 1){
+    char* updatePath = appendToStr(projname, "/.Update");
+    char* commitPath = appendToStr(projname, "/.Commit");
+    if(existsFile(commitPath) != 1){
        printf("[Push] failed to push project \"%s\"\n", projname);
        return;
-   }
+    }
+ 
+    //There is stuff to commit
+    
+    //Update client manifest and hashes
+    int i;
+    int numLinesCommit = getNumLines(commitPath);
+    char* currentCommitLine;
+    char* storedClientHash;
+    char* currentCommitHash;
+    char* currentCommitFileName;
+    char* latestFileVersionStr;
+    int latestFileVersionInt;
+    int lineNumClientFile;
+    char* lineNumClientFileStr;
+    for(i=0;i<numLinesCommit;i++){
+        currentCommitLine = getLineFile(commitPath, i);
+        if(currentCommitLine== NULL){
+            continue;
+        }
+        currentCommitFileName = nthToken(currentCommitLine, 1, ' ');
+        currentCommitHash = nthToken(currentCommitLine, 2, ' ');
+        latestFileVersionStr = nthToken(currentCommitLine, 3, ' ');
+        latestFileVersionInt = strToNum(latestFileVersionStr);
+        if((lineNumClientFileStr  = getFileLineManifest(manifestPath, currentCommitFileName, "-pi")) != NULL){
+            lineNumClientFile = strToNum(lineNumClientFileStr);
+            modifyManifest(projname, lineNumClientFile, "-v", latestFileVersionStr);
+            modifyManifest(projname, lineNumClientFile, "-h", currentCommitHash);
+        }
+    }
 
-   //There is stuff to commit
-   
-   //Update client manifest and hashes
-   int i;
-   int numLinesCommit = getNumLines(commitPath);
-   for(i=0;i<numLinesCommit;i++){
-
-   }
+    //send commit to server
+    sendData(sockfd, projname, commitPath);
+    char** output;
+    // send necessary files from .Commit to server
+    while((output = readInputFromServer(sockfd))!=NULL){
+        sendData(sockfd, projname, output[3]); 
+    }
+    return;
 }
 
 void create(char* projname, int sockfd){
@@ -826,7 +861,9 @@ void currentversion(char* projname, int sockfd){
 }
 
 void history(char* projname, int sockfd){
-
+    char* commitPath = appendToStr(projname, "/.Commit");
+    sendCommand(sockfd, projname, "history");
+    sendData(sockfd, projname, commitPath);
 }
 
 void rollback(char* projname, int version, int sockfd){

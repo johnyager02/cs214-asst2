@@ -25,6 +25,9 @@ typedef struct mutexHolder{
 
 mutexHolder* mutexes = NULL;
 
+char** readInputFromClient(int);
+pthread_mutex_t findMutex(char*);
+
 
 void handleClientFetched(char** output, int clientSockFd){
     char* status = output[0];
@@ -161,6 +164,14 @@ void handleClientSentCommand(char** output, int clientSockFd){
 
         //send history
         printf("[handleClientSentCommand] Client sent command to send history of project: \"%s\"\n", projName);
+        char** commitOuput = (char**) readInputFromClient(clientSockFd);
+        char* commitPath = appendToStr(projName, "/.Commit");
+        char* oldstr = commitPath;
+        createNewFile(commitPath);
+        commitPath = appendToStr(oldstr, hashToStr(getHash(commitPath)));
+        
+        //saving commit
+        overwriteOrCreateFile(commitPath, commitOuput[4]);
     }
     else if(compareString(commandName, "rollback") == 0){
         /*The rollback command will fail if the project name doesn’t exist on the server or the version number given is invalid. 
@@ -171,75 +182,23 @@ void handleClientSentCommand(char** output, int clientSockFd){
 
         printf("[handleClientSentCommand] Client sent command to rollback the project: \"%s\"\n", projName);
     }
-}
-
-void addMutexToList(mutexHolder* m){
-    if(mutexes == NULL){
-        mutexes = m;
-    }
-    else{
-        m->next = mutexes;
-        mutexes = m;
-    }
-    return;
-}
-
-pthread_mutex_t findMutex(char* proj){
-    mutexHolder* ptr = mutexes;
-    while(ptr != NULL){
-        if(compareString(proj, ptr->project) == 0){
-            return ptr->lock;
+    else if(compareString(commandName, "commit") == 0){
+        printf("[command] Client sent command to send history of project: \"%s\"\n", projName);
+        //Error checking
+        if(existsDir(projName) != 1){
+            return; 
         }
-        ptr = ptr->next;
+
+        char** commitOuput = (char**) readInputFromClient(clientSockFd);
+        char* commitPath = appendToStr(projName, "/.Commit");
+        char* oldstr = commitPath;
+        commitPath = appendToStr(oldstr, numToStr(clientSockFd));
+        
+        //saving commit
+        //createNewFile(commitPath);
+        overwriteOrCreateFile(commitPath, commitOuput[4]);
     }
-    printf("error: mutex for project %s could not be found\n", proj);
-    exit(1);
 }
-
-int createMutexes(){
-    DIR* currentDirPtr = opendir("./");
-    if(currentDirPtr == NULL){
-        printf("DIR not found!\n");
-        return -1;
-    }
-    struct dirent* currentPtr;
-    readdir(currentDirPtr);
-    readdir(currentDirPtr);
-    currentPtr = readdir(currentDirPtr);
-    while(currentPtr!=NULL){
-
-        if(currentPtr->d_type == DT_DIR){
-            char* dirName = currentPtr->d_name;
-            if(compareString(dirName, "previous") != 0){
-                mutexHolder* newMutex = malloc(sizeof(mutexHolder));
-                newMutex->project = dirName;
-                if(pthread_mutex_init((&newMutex->lock), NULL) != 0){
-                    printf("Error creating mutex for %s\n", dirName);
-                    exit(1);
-                }
-                newMutex->next = NULL;
-                addMutexToList(newMutex);
-            }
-        }
-        currentPtr = readdir(currentDirPtr);
-    }
-    close(currentDirPtr);
-    return 0;
-}
-
-
-void destroyMutexes(){
-    mutexHolder* ptr = mutexes;
-    while(ptr != NULL){
-        pthread_mutex_destroy(&(ptr->lock));
-        mutexHolder* f = ptr;
-        ptr = ptr->next;
-        free(f->project);
-        free(f);
-    }
-    return;
-}
-
 
 char** readInputFromClient(int sockfd){
     //Want to read <s/f><s/f/c><projLen>:<projName><fileLen>:<fileName> or for send:<s/f><s/f/c><projLen>:<projName><fileLen>:<fileName><dataLen>:<data>
@@ -309,14 +268,14 @@ char** readInputFromClient(int sockfd){
         data = readFromSockIntoBuff(sockfd, data, dataLength);
 
         printf("[readInputProtocol] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
-        char** temp = malloc(sizeof(char*)*2);
-        temp[0] = "st";
-        temp[1] = "ff";
+        // char** temp = malloc(sizeof(char*)*2);
+        // temp[0] = "st";
+        // temp[1] = "ff";
         pthread_mutex_unlock(&mu);
         printf("Mutex %s unlocked\n", projectName);
-        return temp;
+        //return temp;
         //handleSend
-        //return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
+        return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
     }
     else if(commandType == 'f'){
         printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
@@ -346,6 +305,74 @@ char** readInputFromClient(int sockfd){
 
     return NULL;
 }
+
+void addMutexToList(mutexHolder* m){
+    if(mutexes == NULL){
+        mutexes = m;
+    }
+    else{
+        m->next = mutexes;
+        mutexes = m;
+    }
+    return;
+}
+
+pthread_mutex_t findMutex(char* proj){
+    mutexHolder* ptr = mutexes;
+    while(ptr != NULL){
+        if(compareString(proj, ptr->project) == 0){
+            return ptr->lock;
+        }
+        ptr = ptr->next;
+    }
+    printf("error: mutex for project %s could not be found\n", proj);
+    exit(1);
+}
+
+int createMutexes(){
+    DIR* currentDirPtr = opendir("./");
+    if(currentDirPtr == NULL){
+        printf("DIR not found!\n");
+        return -1;
+    }
+    struct dirent* currentPtr;
+    readdir(currentDirPtr);
+    readdir(currentDirPtr);
+    currentPtr = readdir(currentDirPtr);
+    while(currentPtr!=NULL){
+
+        if(currentPtr->d_type == DT_DIR){
+            char* dirName = currentPtr->d_name;
+            if(compareString(dirName, "previous") != 0){
+                mutexHolder* newMutex = malloc(sizeof(mutexHolder));
+                newMutex->project = dirName;
+                if(pthread_mutex_init((&newMutex->lock), NULL) != 0){
+                    printf("Error creating mutex for %s\n", dirName);
+                    exit(1);
+                }
+                newMutex->next = NULL;
+                addMutexToList(newMutex);
+            }
+        }
+        currentPtr = readdir(currentDirPtr);
+    }
+    close(currentDirPtr);
+    return 0;
+}
+
+
+void destroyMutexes(){
+    mutexHolder* ptr = mutexes;
+    while(ptr != NULL){
+        pthread_mutex_destroy(&(ptr->lock));
+        mutexHolder* f = ptr;
+        ptr = ptr->next;
+        free(f->project);
+        free(f);
+    }
+    return;
+}
+
 
 void* threadMaker(void* arg){
     int sockfd = *(int*)arg;
