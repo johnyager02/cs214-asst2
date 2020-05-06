@@ -50,18 +50,18 @@ char** readInputFromServer(int sockfd){
     char* firstRead = readFromSock(sockfd, 2*sizeof(char));
     if(firstRead==NULL){
         //Failed
-        printf("[readInputProtocol] Error: firstRead NULL\n");
+        //printf("[readInputProtocol] Error: firstRead NULL\n");
         return NULL;
     }
     if(strlen(firstRead) != 2){
         //Failed
-        printf("[readInputProtocol] Error: firstRead did not read 2 bytes\n");
+        //printf("[readInputProtocol] Error: firstRead did not read 2 bytes\n");
         return NULL;
     }
     //Handle success or fail
     char success = firstRead[0];
     if(success != 'f' && success != 's'){
-        printf("[readInputProtocol] Unknown message\n");
+        //printf("[readInputProtocol] Unknown message\n");
         return NULL;
     }
     if(success == 'f'){
@@ -93,13 +93,13 @@ char** readInputFromServer(int sockfd){
     fileName = readFromSockIntoBuff(sockfd, fileName, fileLength);
 
     //Done reading...
-    printf("[readInputProtocol] Done Reading -> handling commandType cases\n");
+    //printf("[readInputProtocol] Done Reading -> handling commandType cases\n");
     
     
     if(commandType == 's'){
         //Read dataLen:
         char* dataLengthString = getNextUnknownLen(sockfd);
-        printf("[readInputProtocol] DataLen is: \"%s\"\n", dataLengthString);
+        //printf("[readInputProtocol] DataLen is: \"%s\"\n", dataLengthString);
         int dataLength;
         sscanf(dataLengthString, "%d", &dataLength);
         
@@ -108,25 +108,25 @@ char** readInputFromServer(int sockfd){
         bzero(data, (dataLength+1)*sizeof(char));
         data = readFromSockIntoBuff(sockfd, data, dataLength);
 
-        printf("[readInputProtocol] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
+        //printf("[readInputProtocol] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
 
         //handleSend
         return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
     }
     else if(commandType == 'f'){
-        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+        //printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleFetch
         char** output = (char**) getOutputArrFetched(success, commandType, projectName, fileName);
         handleServerFetched(output, sockfd);
         return output;
     }
     else if(commandType == 'c'){
-        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+        //printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleSendCommand
         //return (char**) getOutputArrFetched(success, commandType, projectName, fileName);
     }
     else{
-        printf("Error: command type not recognized");
+        //printf("Error: command type not recognized");
         return NULL;
     }
     return NULL;
@@ -208,7 +208,7 @@ project, creating any subdirectories under the project and putting all files in 
         return;
     }
     char* serverFileData = output[4];
-    printf("[checkout] serverManifest is: \"%s\"\n", serverFileData);
+    //printf("[checkout] serverManifest is: \"%s\"\n", serverFileData);
 
     //checks if project exists -> if not make
     if(existsDir(projname) != 1){
@@ -234,7 +234,7 @@ project, creating any subdirectories under the project and putting all files in 
     for(i = 1; i<numLinesManifest;i++){ // for each file in manifest fetch and place into correct place
         char* fetchLine = getLineFile(manifestPath, i);
         char* fetchFileName = nthToken(fetchLine, 1, ' '); //get filename from manifest
-        printf("[checkout] Filename of line %d to fetch is: \"%s\"\n", i, fetchFileName); 
+        //printf("[checkout] Filename of line %d to fetch is: \"%s\"\n", i, fetchFileName); 
         //fetch file from server
         fetchData(sockfd, projname, fetchFileName);
         //receive file from server
@@ -247,7 +247,7 @@ project, creating any subdirectories under the project and putting all files in 
     }
     //sendStop fetching
     //sendCommand(sockfd, projname, "stop");
-    printf("[checkout] Checkout for project: \"%s\" succeeded!\n", projname);
+    //printf("[checkout] Checkout for project: \"%s\" succeeded!\n", projname);
     // createNewFile("proj1/test0");
     // createNewFile("proj1/test1");
     // createNewFile("proj1/test2");
@@ -261,7 +261,7 @@ char* allocateCommitLine(char updateChar, char* filename, char* hash, int newVer
     char* lineToAppend = mallocStr(1 + 1 + strlen(filename) + 1 + strlen(hash) + 1 + strlen(newVersionStr) + 1 + 1);
     bzero(lineToAppend, (1 + 1 + strlen(filename) + 1 + strlen(hash) + 1 + strlen(newVersionStr) + 1 + 1)*sizeof(char));
     sprintf(lineToAppend, "%c %s %s %s\n", updateChar, filename, hash, newVersionStr);
-    printf("[allocateCommitLine] %c-final string to append is: \"%s\"\n", updateChar, lineToAppend);
+    //printf("[allocateCommitLine] %c-final string to append is: \"%s\"\n", updateChar, lineToAppend);
     return lineToAppend;
 }
 
@@ -269,7 +269,7 @@ char* allocateUpdateLine(char updateChar, char* filename, char* hash){
     char* lineToAppend = mallocStr(1 + 1 + strlen(filename) + 1 + strlen(hash) + 1 + 1);
     bzero(lineToAppend, (1 + 1 + strlen(filename) + 1 + strlen(hash) + 1 + 1)*sizeof(char));
     sprintf(lineToAppend, "%c %s %s\n", updateChar, filename, hash);
-    printf("[handCaseUpdateMC] %c-final string to append is: \"%s\"\n", updateChar, lineToAppend);
+    //printf("[handCaseUpdateMC] %c-final string to append is: \"%s\"\n", updateChar, lineToAppend);
     return lineToAppend;
 }
 
@@ -286,15 +286,15 @@ char* handleCaseUpdateMC(char* currentClientLine, char* currentServerLine, char*
 
     //Get stored client hash
     char* storedClientHash = nthToken(currentClientLine, 2, ' ');
-    printf("[handleCaseUpdateMC] storedClientHash is: \"%s\"\n", storedClientHash);
+    //printf("[handleCaseUpdateMC] storedClientHash is: \"%s\"\n", storedClientHash);
     
     //Get stored server hash
     char* storedServerHash = nthToken(currentServerLine, 2, ' ');
-    printf("[handleCaseUpdateMC] storedServerHash is: \"%s\"\n", storedServerHash);
+    //printf("[handleCaseUpdateMC] storedServerHash is: \"%s\"\n", storedServerHash);
     
     //Get live client hash
     char* liveClientHash = hashToStr(getHash(currentServerFileName));
-    printf("[handleCaseUpdateMC] liveClientHash is: \"%s\"\n", liveClientHash);
+    //printf("[handleCaseUpdateMC] liveClientHash is: \"%s\"\n", liveClientHash);
     
     //Compare stored hashes   
     if(clientFileVersionInt!=serverFileVersionInt && compareString(storedClientHash, storedServerHash) != 0 && compareString(storedClientHash, liveClientHash)==0){ // M case
@@ -330,7 +330,7 @@ void add(char* projname, char* filename, int fileversion){ // Expects projname a
         return;
     } 
     //File exists and is not already in manifest -> append to .Manifest
-    printf("[add] Adding file: \"%s\" to the manifest of project: \"%s\"\n", filename, projname);
+    //printf("[add] Adding file: \"%s\" to the manifest of project: \"%s\"\n", filename, projname);
     char* lineToAdd = getLineToAdd(fileversion, filename);
     addToManifest(manifestPath, lineToAdd);
 }
@@ -356,7 +356,7 @@ void removeEntry(char* projname, char* filename){ // Expects projname as format:
         return;
     } 
     //File exists and is in the manifest -> delete entry
-    printf("[removeEntry] Deleting file: \"%s\" from the manifest of project: \"%s\"\n", filename, projname);
+   // printf("[removeEntry] Deleting file: \"%s\" from the manifest of project: \"%s\"\n", filename, projname);
     removeLine(manifestPath, lineNumToDelete);
 }
 
@@ -379,7 +379,7 @@ void update(char* projname, int sockfd){
         return;
     }
     char* serverFileData = output[4];
-    printf("[update] serverManifest is: \"%s\"\n", serverFileData);
+    //printf("[update] serverManifest is: \"%s\"\n", serverFileData);
     
     //TESTING:
     //char* serverManifestData = getFileContents("server/proj1/.Manifest");
@@ -417,10 +417,10 @@ void update(char* projname, int sockfd){
         currentServerLine = getLineFile(tempServerManifest, i);
         char* currentServerFileName = nthToken(currentServerLine, 1, ' ');
         char* currentServerFileHash = nthToken(currentServerLine, 2, ' ');
-        printf("[update] currentServerFileName is: \"%s\"\n", currentServerFileName);
-        printf("[update] currentServerFileHash is: \"%s\"\n", currentServerFileHash);
+        //printf("[update] currentServerFileName is: \"%s\"\n", currentServerFileName);
+        //printf("[update] currentServerFileHash is: \"%s\"\n", currentServerFileHash);
         if( (currentClientLine = getFileLineManifest(manifestPath, currentServerFileName, "-ps") ) != NULL){ //server's manifest file exists on client's manifest -> Check M or C
-            printf("[update] Client manifest has file: \"%s\"\n", currentServerFileName);
+            //printf("[update] Client manifest has file: \"%s\"\n", currentServerFileName);
             char* lineToAppend = handleCaseUpdateMC(currentClientLine, currentServerLine, currentServerFileName);
             if(lineToAppend == NULL){
                 continue;
@@ -443,7 +443,7 @@ void update(char* projname, int sockfd){
             
         }
         else{ //server has files not on client's manifest -> Append A to .Update
-            printf("[update] Server has file: \"%s\" which is not in client's manifest\n", currentServerFileName);
+            //printf("[update] Server has file: \"%s\" which is not in client's manifest\n", currentServerFileName);
             //Format "<A> <filename>"
             char* lineToAppend = allocateUpdateLine('A', currentServerFileName, currentServerFileHash);
             addToManifest(updatePath, lineToAppend); //reuse addToManifest to append lineToAppend to .Update
@@ -458,10 +458,10 @@ void update(char* projname, int sockfd){
         currentClientLine = getLineFile(manifestPath, j);
         char* currentClientFileName = nthToken(currentClientLine, 1, ' ');
         char* currentClientFileHash = nthToken(currentClientLine, 2, ' ');
-        printf("[update] currentClientFileName is: \"%s\"\n", currentClientFileName);
-        printf("[update] currentClientFileHash is: \"%s\"\n", currentClientFileHash);
+        //printf("[update] currentClientFileName is: \"%s\"\n", currentClientFileName);
+        //printf("[update] currentClientFileHash is: \"%s\"\n", currentClientFileHash);
         if( (currentServerLine = getFileLineManifest(tempServerManifest, currentClientFileName, "-ps") ) == NULL){ //client's manifest file exists on server's manifest -> Check M or C
-            printf("[update] Client has file: \"%s\" which is not in server's manifest\n", currentClientFileName);
+            //printf("[update] Client has file: \"%s\" which is not in server's manifest\n", currentClientFileName);
             //Format "<D> <filename> <hash>\n"
             char* lineToAppend = allocateUpdateLine('D', currentClientFileName, currentClientFileHash);
             addToManifest(updatePath, lineToAppend); //reuse addToManifest to append lineToAppend to .Update
@@ -512,7 +512,7 @@ void upgrade(char* projname, int sockfd){
         return;
     }
     char* serverFileData = output[4];
-    printf("[upgrade] serverManifest is: \"%s\"\n", serverFileData);
+    //printf("[upgrade] serverManifest is: \"%s\"\n", serverFileData);
 
     //Initiate temp server manifest
     char* tempServerManifest = appendToStr(projname, "/.serverManifest");
@@ -535,7 +535,7 @@ void upgrade(char* projname, int sockfd){
         currentFileHash = nthToken(currentUpdateLine, 2, ' ');
         if(currentUpdateLine[0] == 'D'){
             //handle 'D' -> delete all files with this tag from client manifest
-            printf("[upgrade] Removing entry for file: \"%s\" from client manifest\n", currentFileName);
+            //printf("[upgrade] Removing entry for file: \"%s\" from client manifest\n", currentFileName);
             removeEntry(projname, currentFileName);
         }
         else if(currentUpdateLine[0] == 'A' || currentUpdateLine[0] == 'M'){
@@ -570,7 +570,7 @@ void upgrade(char* projname, int sockfd){
     setLineFile(manifestPath, 0, serverProjLine);
     //Done processing->client manifest and proj directory should be up to date
     remove(tempServerManifest);
-    printf("[upgrade] upgrade for proj \"%s\" was successful\n", projname);
+    //printf("[upgrade] upgrade for proj \"%s\" was successful\n", projname);
 }
 
 void commit(char* projname, int sockfd){
@@ -606,7 +606,7 @@ void commit(char* projname, int sockfd){
         return;
     }
     char* serverFileData = output[4];
-    printf("[commit] serverManifest is: \"%s\"\n", serverFileData);
+    //printf("[commit] serverManifest is: \"%s\"\n", serverFileData);
 
     //Initiate temp server manifest
     char* tempServerManifest = appendToStr(projname, "/.serverManifest");
@@ -720,7 +720,7 @@ void commit(char* projname, int sockfd){
     free(updatePath);
     free(conflictPath);
     free(tempServerManifest);
-    printf("[commit] Commit was successful for \"%s\"\n", projname);
+    //printf("[commit] Commit was successful for \"%s\"\n", projname);
     return;
 }
 
@@ -791,14 +791,14 @@ void create(char* projname, int sockfd){
     }
 
     char* serverFileData = output[4];
-    printf("[create] serverManifest is: \"%s\"\n", serverFileData);
+    //printf("[create] serverManifest is: \"%s\"\n", serverFileData);
     int makeDir = mkdir(projname, 0777);
     char* manifestPath = appendToStr(projname, "/.Manifest");
     createNewFile(manifestPath);
     overwriteOrCreateFile(manifestPath, serverFileData);
     //close(sockfd);
     //if(totalNumBytesWritten == strlen(filedata)){
-    printf("[create] Successfully created project: \"%s\"!\n", projname);
+    //printf("[create] Successfully created project: \"%s\"!\n", projname);
     //}
     // free(filedata);
     // free(manifestPath);
@@ -817,7 +817,7 @@ void destroy(char* projname, int sockfd){
         //close(sockfd);
         return;
     } else if(output[0][0] == 's'){
-        printf("[destroy] Successfully destroyed project: \"%s\"!\n", projname);
+        //printf("[destroy] Successfully destroyed project: \"%s\"!\n", projname);
     }
 }
 
@@ -857,7 +857,7 @@ void currentversion(char* projname, int sockfd){
         printf("%s %s\n", fileName, versionStr);
     }
     remove(tempServerManifest);
-    printf("[currentversion] Successfull!\n");
+    //printf("[currentversion] Successfull!\n");
 }
 
 void history(char* projname, int sockfd){

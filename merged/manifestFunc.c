@@ -81,13 +81,12 @@ char* getProjVersion(char* projname){//Finds the manifest for project and return
             memset(projVersion + totalReadInBytes, '\0', (currentBufferSize + 1 - totalReadInBytes)*sizeof(char));
         }
         if(numBytesRead < 0){
-            printf("Fatal Error (bytes): %s\n", strerror(errno));
+            //printf("Fatal Error (bytes): %s\n", strerror(errno));
             int fileclose = close(manifestFile);
             if(fileclose < 0){
                 printf("Fatal Error: %s\n", strerror(errno));
                 exit(EXIT_FAILURE);
             }
-            exit(EXIT_FAILURE);
         }
         else if(numBytesRead == 1){
             if(projVersion[totalReadInBytes - 1] == '\n'){
@@ -106,8 +105,8 @@ char* getProjVersion(char* projname){//Finds the manifest for project and return
 char* getFileContents(char* filepath){
     int file = open(filepath, O_RDONLY, 00644);
     if(file<0){
-        printf("Fatal Error: %s in regard to path %s\n", strerror(errno), file);
-        exit(EXIT_FAILURE);
+        printf("Error: %s in regard to path %s\n", strerror(errno), file);
+        return NULL;
     }
     //Initialize buffer
     char* finalStr = (char*) mallocStr(1025);
@@ -143,7 +142,7 @@ char* getFileContents(char* filepath){
     int oldNumBytes = strlen(finalStr);
     finalStr = (char*) reallocStr(finalStr, (oldNumBytes + 1)*sizeof(char));
 
-    printf("[getFileContents]-Final buffer is: \"%s\"\n", finalStr);
+    //printf("[getFileContents]-Final buffer is: \"%s\"\n", finalStr);
     return finalStr;
 }
 
@@ -166,12 +165,12 @@ char* numToStr(int num){
 }
 
 void printHash(unsigned char* hash, char* fileName){
-    printf("Hash for file: \"%s\" is: ", fileName);
+    //printf("Hash for file: \"%s\" is: ", fileName);
     int i;
     for(i = 0; i<20;i++){
-        printf("%02x", hash[i]);
+        //printf("%02x", hash[i]);
     }
-    printf("\n");
+    //printf("\n");
 }
 
 unsigned char* mallocUChar(int size){
@@ -193,7 +192,7 @@ unsigned char* getHash(char* filepath){
     int file = open(filepath, O_RDONLY);
     if(file < 0){//error opening file specified
 		printf("[getHash]-Fatal Error: %s in regard to path %s\n", strerror(errno), filepath);
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
 		return NULL;
 	}
     //printf("Successfully opened file: %s\n", filepath);
@@ -209,14 +208,15 @@ unsigned char* getHash(char* filepath){
         numBytesRead = read(file, fileData, 1024*sizeof(*hash));
         totalReadInBytes+=numBytesRead;
         if(numBytesRead< 0){
-            printf("[getHash]-Fatal Error (bytes): %s\n", strerror(errno));
+            //printf("[getHash]-Fatal Error (bytes): %s\n", strerror(errno));
             int fileclose = close(file);
             free(hash);
             if(fileclose < 0){
                 printf("Fatal Error: %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
+                //exit(EXIT_FAILURE);
             }
-            exit(EXIT_FAILURE);
+            //exit(EXIT_FAILURE);
+            return NULL;
         }
         else if(numBytesRead == 0 && totalReadInBytes == 0){ //empty file, return empty hash "da39a3ee5e6b4b0d3255bfef95601890afd80709"
             unsigned char emptyHash[] = "";
@@ -270,7 +270,7 @@ char* getLineToAdd(int versionNum, char* filepath){ //filepath should be "./proj
     free(oldStr);
     free(versionStr);
     free(hashStr);
-    printf("finalLine is: %s", finalLine);
+    //printf("finalLine is: %s", finalLine);
     return finalLine;
 }
 
@@ -296,7 +296,8 @@ void addToManifest(char* manifestPath, char* line){ //path should be "./<current
     int file = open(manifestPath, O_WRONLY | O_APPEND, 00644);
     if(file<0){
         printf("Fatal Error: %s in regard to path %s\n", strerror(errno), manifestPath);
-        exit(EXIT_FAILURE);
+       //exit(EXIT_FAILURE);
+       return;
     }
     int numBytesToWrite = strlen(line);
     int numBytesWritten = 0;
@@ -310,17 +311,17 @@ void addToManifest(char* manifestPath, char* line){ //path should be "./<current
 
 
 char* getHashStrLine(char* line){ // assumes correctly formatted line: "<version> <./proj0/test0> <hash> <checkedByServer>\n\0"
-    printf("[getHashStrLine] input line is: \"%s\"\n", line);
+   //printf("[getHashStrLine] input line is: \"%s\"\n", line);
     char* hashStr = (char*) mallocStr(40 + 1);
     memset(hashStr, '\0', 41*sizeof(char));
     int numZeros = 0;
     int i = 0;
     char currentChar = line[0];
     int hashIndex = 0;
-    printf("[getHashStrLine] read: \"");
+    //printf("[getHashStrLine] read: \"");
     while(currentChar != '\n'){
         currentChar = line[i];
-        printf("%c", currentChar);
+        //printf("%c", currentChar);
         if(currentChar == ' '){
             numZeros++;
         }
@@ -330,8 +331,8 @@ char* getHashStrLine(char* line){ // assumes correctly formatted line: "<version
         }
         i++;
     }
-    printf("\" [getHashStrLine] Loop stop\n");
-    printf("[getHashStrLine] numZeros is: %d\n", numZeros);
+    //printf("\" [getHashStrLine] Loop stop\n");
+    //printf("[getHashStrLine] numZeros is: %d\n", numZeros);
     if(numZeros > 2){
         //printf("[getHashStrLine] hashStr is: \"%s\"\n", hashStr);
         return hashStr;
@@ -366,7 +367,8 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
     int manifestFile = open(manifestPath, O_RDONLY, 00644);
     if(manifestFile<0){
         printf("Fatal Error: %s in regard to path %s\n", strerror(errno), manifestPath);
-        exit(EXIT_FAILURE);
+        return NULL;
+        //exit(EXIT_FAILURE);
     }
     //File exists -> Do the parsing by line
     char* targetHashStr;
@@ -391,9 +393,10 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
             int fileclose = close(manifestFile);
             if(fileclose < 0){
                 printf("Fatal Error: %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
+                //exit(EXIT_FAILURE);
             }
-            exit(EXIT_FAILURE);
+            //exit(EXIT_FAILURE);
+            return NULL;
         }
         else if(numBytesRead == 0 && totalReadInBytes == 0){ // empty file
             //printf("Empty file!\n");
@@ -411,7 +414,7 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                     if(currentFileStr!=NULL){
                         //printf("[getFileLineManifest] currentFileStr is: \"%s\"\n", currentFileStr);
                         if(compareString(filepath, currentFileStr) == 0){
-                            printf("[getFileLineManifest] Found filepath! Returning line: \"%s\"\n", currentLine);
+                            //printf("[getFileLineManifest] Found filepath! Returning line: \"%s\"\n", currentLine);
                             return currentLine;
                         }
                     }
@@ -422,7 +425,7 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                     if(currentFileStr!=NULL){
                         //printf("[getFileLineManifest] currentFileStr is: \"%s\"\n", currentFileStr);
                         if(compareString(filepath, currentFileStr) == 0){
-                            printf("[getFileLineManifest] Found filepath! Returning lineNum: \"%d\"\n", linesRead+1);
+                            //printf("[getFileLineManifest] Found filepath! Returning lineNum: \"%d\"\n", linesRead+1);
                             return numToStr(linesRead);
                         }
                     }
@@ -435,7 +438,7 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                     if(currentHashStr!= NULL){ //File hash found in currentLine -> compareHashes
                         //printf("[getFileLineManifest] currentHashStr is: \"%s\"\n", currentHashStr);
                         if(compareString(targetHashStr, currentHashStr) == 0){
-                            printf("[getFileLineManifest] Found hash! Returning line: \"%s\"\n", currentLine);
+                            //printf("[getFileLineManifest] Found hash! Returning line: \"%s\"\n", currentLine);
                             return currentLine;
                         }
                     }
@@ -448,7 +451,7 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                     if(currentHashStr!= NULL){ //File hash found in currentLine -> compareHashes
                         //printf("[getFileLineManifest] currentHashStr is: \"%s\"\n", currentHashStr);
                         if(compareString(targetHashStr, currentHashStr) == 0){
-                            printf("[getFileLineManifest] Found hash! Returning lineNum: \"%d\"\n", linesRead+1);
+                            //printf("[getFileLineManifest] Found hash! Returning lineNum: \"%d\"\n", linesRead+1);
                             return numToStr(linesRead);
                         }
                     }
@@ -459,7 +462,7 @@ char* getFileLineManifest(char* manifestPath, char* filepath, char* searchFlag){
                     memcpy(lineTarget, searchFlag + 2, (strlen(searchFlag) - 2) * sizeof(char));
                     linesReadStr =numToStr(linesRead);
                     if(compareString(lineTarget, linesReadStr) == 0){
-                        printf("[getFileLineManifest] Found target line number! Returning line: \"%s\"\n", currentLine);
+                        //printf("[getFileLineManifest] Found target line number! Returning line: \"%s\"\n", currentLine);
                         free(lineTarget);
                         free(linesReadStr);
                         return currentLine;
@@ -523,12 +526,13 @@ void setLineFile(char* filepath, int lineNum, char* newline){
             int fileclose = close(file);
             if(fileclose < 0){
                 printf("Fatal Error: %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
+                //exit(EXIT_FAILURE);
             }
-            exit(EXIT_FAILURE);
+            //exit(EXIT_FAILURE);
+            return;
         }
         else if(numBytesRead == 0 && totalReadInBytes == 0){ // empty file
-            printf("[writeChangeToLine] Empty file!\n");
+            //printf("[writeChangeToLine] Empty file!\n");
             return;
         }
         else if(numBytesRead == 1){
@@ -552,8 +556,8 @@ void setLineFile(char* filepath, int lineNum, char* newline){
             indexOfCopy++;
         }
     } while(numBytesRead != 0);
-    printf("[setLineFile] Total bytes read is: %d\n", totalReadInBytes);
-    printf("[setLineFile] poststrToWrite  is: \"%s\"\n", strToWrite);
+    //printf("[setLineFile] Total bytes read is: %d\n", totalReadInBytes);
+    //printf("[setLineFile] poststrToWrite  is: \"%s\"\n", strToWrite);
     if(lineNum == 0){
         //char* old = strToWrite;
         strToWriteFinal = prependToStr(strToWrite, newline);
@@ -567,11 +571,11 @@ void setLineFile(char* filepath, int lineNum, char* newline){
         char* oldStr = strToWriteFinal;
         strToWriteFinal = appendToStr(oldStr, strToWrite);
         free(oldStr);
-        printf("[setLineFile] strToWriteFinal after appending  is: \"%s\"\n", strToWriteFinal);    
+        //printf("[setLineFile] strToWriteFinal after appending  is: \"%s\"\n", strToWriteFinal);    
     }
     
     close(file);
-    printf("[setLineFile] strToWriteFinal is: \"%s\"\n", strToWriteFinal);
+    //printf("[setLineFile] strToWriteFinal is: \"%s\"\n", strToWriteFinal);
 
     //Now write strToWrite to file using O_TRUNC
     int fileToWrite = open(filepath, O_RDWR | O_TRUNC, 00644);
@@ -596,13 +600,15 @@ void removeLine(char* filepath, int lineNum){
     int fileRead = open(filepath, O_RDONLY, 00644);
     if(fileRead<0){
         printf("Fatal Error: %s in regard to path %s\n", strerror(errno), fileRead);
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return;
     }
     //Prep file writing (separate file descriptor)
     int fileWrite = open(filepath, O_WRONLY, 00644);
     if(fileWrite<0){
         printf("Fatal Error: %s in regard to path %s\n", strerror(errno), fileWrite);
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return;
     }
 
     //File exists -> do line by line write, except line to remove
@@ -621,17 +627,18 @@ void removeLine(char* filepath, int lineNum){
             int fileclose = close(fileRead);
             if(fileclose < 0){
                 printf("Fatal Error: %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
+                //exit(EXIT_FAILURE);
             }
             fileclose = close(fileWrite);
             if(fileclose < 0){
-                printf("Fatal Error: %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
+                //printf("Fatal Error: %s\n", strerror(errno));
+                //exit(EXIT_FAILURE);
             }
-            exit(EXIT_FAILURE);
+            //exit(EXIT_FAILURE);
+            return;
         }
         else if(numBytesRead == 0 && totalReadInBytes == 0){ // empty file
-            printf("Empty file!\n");
+            //printf("Empty file!\n");
             return;
         }
         else if(numBytesRead == 1){
@@ -671,21 +678,21 @@ void modifyManifest(char* projname, int lineNum, char* flagChange, char* change)
     //Do the changes at the specified lineNum: EX) "0 ./proj0/test0 asdasasdsdsda n\n"
     char* newline = NULL;
     if(compareString(flagChange, "-v") == 0){ // update Version
-        printf("[modifyManifest]-update version to : %s\n", change);
+        //("[modifyManifest]-update version to : %s\n", change);
         int newLineSize = strlen(lineToChange) + strlen(change);
         newline = (char*) mallocStr(newLineSize + 1);
         memset(newline, '\0', (newLineSize+1)*sizeof(char));
         sprintf(newline, "%s %s %s %s", change, oldPath, oldHash, oldCheckChar);
     }
     else if(compareString(flagChange, "-p") == 0){ // update Path
-        printf("[modifyManifest]-update path to : %s\n", change);
+        //printf("[modifyManifest]-update path to : %s\n", change);
         int newLineSize = strlen(lineToChange) + strlen(change);
         newline = (char*) mallocStr(newLineSize + 1);
         memset(newline, '\0', (newLineSize+1)*sizeof(char));
         sprintf(newline, "%s %s %s %s", oldVersion, change, oldHash, oldCheckChar);
     }
     else if(compareString(flagChange, "-h") == 0){ // update Hash
-        printf("[modifyManifest]-update hash to : %s\n", change);
+        //printf("[modifyManifest]-update hash to : %s\n", change);
         int newLineSize = strlen(lineToChange) + strlen(change);
         newline = (char*) mallocStr(newLineSize + 1);
         memset(newline, '\0', (newLineSize+1)*sizeof(char));
@@ -693,7 +700,7 @@ void modifyManifest(char* projname, int lineNum, char* flagChange, char* change)
     }
     else if(compareString(flagChange, "-c") == 0){ // update checkedByServer
         change = (char*) appendToStr(change, "\n");
-        printf("[modifyManifest]-update checkByServer to : %s\n", change);
+        //printf("[modifyManifest]-update checkByServer to : %s\n", change);
         int newLineSize = strlen(lineToChange) + strlen(change);
         newline = (char*) mallocStr(newLineSize + 1);
         memset(newline, '\0', (newLineSize+1)*sizeof(char));
@@ -755,12 +762,13 @@ int getNumLines(char* filepath){
             int fileclose = close(file);
             if(fileclose < 0){
                 printf("Fatal Error: %s\n", strerror(errno));
-                exit(EXIT_FAILURE);
+                //exit(EXIT_FAILURE);
             }
-            exit(EXIT_FAILURE);
+            //exit(EXIT_FAILURE);
+            return -1;
         }
         else if(numBytesRead == 0 && totalReadInBytes == 0){ // empty file
-            printf("[getNumLines] Empty file! %s\n", strerror(errno));
+            //printf("[getNumLines] Empty file! %s\n", strerror(errno));
             return 0;
         }
         else if(buffer[0] == '\n'){
