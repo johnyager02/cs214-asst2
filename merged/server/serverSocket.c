@@ -76,13 +76,13 @@ void handleClientSentCommand(char** output, int clientSockFd){
         If there is a failure at any point in this process, the server should delete any new files or directories created, 
         unlock the repository and 
         send a failure message to the client. */
-        printf("[handleClientSentCommand] Client sent command to push project: \"%s\"\n", projName);
+        //printf("[handleClientSentCommand] Client sent command to push project: \"%s\"\n", projName);
     }
     else if(compareString(commandName, "create") == 0){
     /*The create command will fail if the project name already exists on the server 
     Otherwise, the server will create a project folder with the given name, initialize a .Manifest for it
     and send it to the client.*/
-        printf("[handleClientSentCommand] Client sent command to create project: \"%s\"\n", projName);
+        //printf("[handleClientSentCommand] Client sent command to create project: \"%s\"\n", projName);
         
         // Server: check if project exists:
         if(existsDir(projName) == 1){
@@ -97,7 +97,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
         //Send new Manifest to client
         char* manifestPath = appendToStr(projName, "/.Manifest");
         char* filecontents = getFileContents(manifestPath);
-        printf("[handleClientSentCommand] filecontents is: \"%s\"\n", filecontents);
+        //printf("[handleClientSentCommand] filecontents is: \"%s\"\n", filecontents);
         sendData(clientSockFd, projName, manifestPath);
         //free memory:
         // int i;
@@ -112,7 +112,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
     On receiving a destroy command the server should lock the repository, expire any pending commits,
     delete all files and subdirectories under the project and send back a success message.*/
 
-        printf("[handleClientSentCommand] Client sent command to destroy project: \"%s\"\n", projName);
+        //printf("[handleClientSentCommand] Client sent command to destroy project: \"%s\"\n", projName);
         //lock repository
 
         //expire pending commits
@@ -126,14 +126,14 @@ void handleClientSentCommand(char** output, int clientSockFd){
         }
         recursiveDelete(projName);
         if(isEmptyDir(projName)){
-            printf("[handleClientSentCommand] Deleted proj: \"%s\"\n", projName);
+            //printf("[handleClientSentCommand] Deleted proj: \"%s\"\n", projName);
             //Delete empty proj dir
             rmdir(projName);
             //send back success
             sendData(clientSockFd, projName, "success");
             
         } else{
-            printf("[handleClientSentCommand] Failed to delete proj: \"%s\"\n", projName);
+            //printf("[handleClientSentCommand] Failed to delete proj: \"%s\"\n", projName);
             //send back failed
             sendData(clientSockFd, projName, "");
         } 
@@ -144,7 +144,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
         /*The currentversion command will request from the server the current state of a project from the server. This
         command does not require that the client has a copy of the project locally. The client should output a list of all
         files under the project name, along with their version number (i.e., number of updates).*/
-        printf("[handleClientSentCommand] Client sent command to get currentversion of project: \"%s\"\n", projName);
+        //("[handleClientSentCommand] Client sent command to get currentversion of project: \"%s\"\n", projName);
         // Server: check if project exists:
         if(existsDir(projName) == 1){
             //send failure
@@ -153,7 +153,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
         //Send  Manifest to client
         char* manifestPath = appendToStr(projName, "/.Manifest");
         char* filecontents = getFileContents(manifestPath);
-        printf("[handleClientSentCommand] filecontents is: \"%s\"\n", filecontents);
+        //printf("[handleClientSentCommand] filecontents is: \"%s\"\n", filecontents);
         sendData(clientSockFd, projName, manifestPath);
     }
     else if(compareString(commandName, "history") == 0){
@@ -163,7 +163,7 @@ void handleClientSentCommand(char** output, int clientSockFd){
         of changes.*/
 
         //send history
-        printf("[handleClientSentCommand] Client sent command to send history of project: \"%s\"\n", projName);
+        //printf("[handleClientSentCommand] Client sent command to send history of project: \"%s\"\n", projName);
         
     }
     else if(compareString(commandName, "rollback") == 0){
@@ -173,10 +173,10 @@ void handleClientSentCommand(char** output, int clientSockFd){
 
         //delete more recent versions past the requested version on serverside
 
-        printf("[handleClientSentCommand] Client sent command to rollback the project: \"%s\"\n", projName);
+        //printf("[handleClientSentCommand] Client sent command to rollback the project: \"%s\"\n", projName);
     }
     else if(compareString(commandName, "commit") == 0){
-        printf("[command] Client sent command to send history of project: \"%s\"\n", projName);
+        //printf("[command] Client sent command to send history of project: \"%s\"\n", projName);
         //Error checking
         if(existsDir(projName) != 1){
             return; 
@@ -196,9 +196,9 @@ void handleClientSentCommand(char** output, int clientSockFd){
 char** readInputFromClient(int sockfd){
     //Want to read <s/f><s/f/c><projLen>:<projName><fileLen>:<fileName> or for send:<s/f><s/f/c><projLen>:<projName><fileLen>:<fileName><dataLen>:<data>
     //Read successflag and commandType
-    printf("Start read\n");
+    //printf("Start read\n");
     char* firstRead = readFromSock(sockfd, 2*sizeof(char));
-    printf("firstRead %s\n", firstRead);
+    //printf("firstRead %s\n", firstRead);
     if(firstRead==NULL){
         //Failed
         printf("[readInputProtocol] Error: firstRead NULL\n");
@@ -206,7 +206,7 @@ char** readInputFromClient(int sockfd){
     }
     if(strlen(firstRead) != 2){
         //Failed
-        printf("[readInputProtocol] Error: firstRead did not read 2 bytes\n");
+        //printf("[readInputProtocol] Error: firstRead did not read 2 bytes\n");
         return NULL;
     }
     //Handle success or fail
@@ -247,7 +247,7 @@ char** readInputFromClient(int sockfd){
     
     pthread_mutex_t mu = findMutex(projectName);
     pthread_mutex_lock(&mu);
-    printf("Mutex %s locked\n", projectName);
+    //printf("Mutex %s locked\n", projectName);
 
     if(commandType == 's'){
         //Read dataLen:
@@ -260,27 +260,27 @@ char** readInputFromClient(int sockfd){
         bzero(data, (dataLength+1)*sizeof(char));
         data = readFromSockIntoBuff(sockfd, data, dataLength);
 
-        printf("[readInputProtocol] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
+        //printf("[readInputProtocol] %c %c %s %s %d %s\n", success, commandType, projectName, fileName, dataLength, data);
         // char** temp = malloc(sizeof(char*)*2);
         // temp[0] = "st";
         // temp[1] = "ff";
         pthread_mutex_unlock(&mu);
-        printf("Mutex %s unlocked\n", projectName);
+        //printf("Mutex %s unlocked\n", projectName);
         //return temp;
         //handleSend
         return (char**) getOutputArrSent(success, commandType, projectName, fileName, data);
     }
     else if(commandType == 'f'){
-        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+        //printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleFetch
         char** output = (char**) getOutputArrFetched(success, commandType, projectName, fileName);
         handleClientFetched( output, sockfd);
         pthread_mutex_unlock(&mu);
-        printf("Mutex %s unlocked\n", projectName);
+        //printf("Mutex %s unlocked\n", projectName);
         return output;
     }
     else if(commandType == 'c'){
-        printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
+        //printf("[readInput] %c %c %s %s\n", success, commandType, projectName, fileName);
         //handleSendCommand
         if(compareString(fileName, "stop") == 0 ){
             return NULL;
@@ -289,7 +289,7 @@ char** readInputFromClient(int sockfd){
         return NULL;
     }
     else{
-        printf("Error: command type not recognized");
+        //printf("Error: command type not recognized");
         pthread_mutex_unlock(&mu);
 
         return NULL;
@@ -369,10 +369,10 @@ void destroyMutexes(){
 
 void* threadMaker(void* arg){
     int sockfd = *(int*)arg;
-    printf("[threadmaker: Starting thread %d\n", sockfd);
+    //printf("[threadmaker: Starting thread %d\n", sockfd);
     while(readInputFromClient(sockfd) != NULL){     
     }
-    printf("[threadmaker]: Finished thread %d\n", sockfd);
+    //printf("[threadmaker]: Finished thread %d\n", sockfd);
     return NULL;
 }
 

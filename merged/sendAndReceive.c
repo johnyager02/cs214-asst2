@@ -108,11 +108,11 @@ int writeToSock(int sockfd, char* buff){
     int numBytesToWrite = strlen(buff);
     int numBytesWritten = 0;
     int totalNumBytesWritten = 0;
-    printf("[writeToSock] Writing buffer: \"%s\"\n", buff);
-    printf("[writeToSock] str len of buffer is: %d\n", numBytesToWrite);
+    //printf("[writeToSock] Writing buffer: \"%s\"\n", buff);
+    //printf("[writeToSock] str len of buffer is: %d\n", numBytesToWrite);
     do{
         numBytesWritten = write(sockfd, buff + totalNumBytesWritten, (numBytesToWrite-totalNumBytesWritten)*sizeof(char));
-        printf("Numbyteswritten is: %d\n", numBytesWritten);
+        //printf("Numbyteswritten is: %d\n", numBytesWritten);
         if(numBytesWritten > 0){
             numBytesToWrite-=numBytesWritten;
             totalNumBytesWritten+=numBytesWritten;
@@ -147,7 +147,7 @@ void sendData(int sockfd, char* projectName, char* fileName){
     char* buff = mallocStr(2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + strlen(dataLengthString) + 1 + dataLengthInt + 1);
     sprintf(buff, "%c%c%s:%s%s:%s%s:%s", success, 's', projectLengthString, projectName, fileLengthString, fileName, dataLengthString, data);
     buff[2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + strlen(dataLengthString) + 1 + dataLengthInt] = '\0';
-    printf("[sendData] \"%s\"\n", buff);
+    //printf("[sendData] \"%s\"\n", buff);
     writeToSock(sockfd, buff);
 }
 
@@ -160,7 +160,7 @@ void fetchData(int sockfd, char* projectName, char* fileName){
     char* buff = mallocStr(2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt + 1);
     sprintf(buff, "%c%c%s:%s%s:%s", success, 'f' , projectLengthString, projectName, fileLengthString, fileName);
     buff[2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(fileLengthString) + 1 + fileLengthInt] = '\0';
-    printf("[fetchData] \"%s\"\n", buff);
+    //printf("[fetchData] \"%s\"\n", buff);
     writeToSock(sockfd, buff);
 }
 
@@ -177,7 +177,7 @@ void sendCommand(int sockfd, char* projectName, char* commandName){
     char* buff = mallocStr(2 + strlen(projectLengthString) + 1 + projectLengthInt + strlen(commandLengthString) + 1 + commandLengthInt + 1);
     sprintf(buff, "%c%c%s:%s%s:%s", success, 'c' , projectLengthString, projectName, commandLengthString, commandName);
     buff[2 +  strlen(projectLengthString) + 1 + projectLengthInt + strlen(commandLengthString) + 1 + commandLengthInt] = '\0';
-    printf("[sendCommand] \"%s\"\n", buff);
+    //printf("[sendCommand] \"%s\"\n", buff);
     writeToSock(sockfd, buff);
 }
 

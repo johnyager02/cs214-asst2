@@ -26,3 +26,6 @@ cleanManifest:	main
 
 cleanProj0:
 	rm ./server/proj0/.Manifest; rmdir ./server/proj0
+
+test:	test.c
+	gcc -c test.c
