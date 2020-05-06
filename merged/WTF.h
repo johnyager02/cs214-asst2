@@ -17,7 +17,7 @@ void history(char* , int);
 void rollback(char* ,int, int );
 char* nthDirPathToName(char*, int);
 char* filepathToName(char*);
-
+char* allocateCommitLine(char, char* , char* , int);
 
 
 #endif
